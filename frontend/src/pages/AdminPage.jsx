@@ -217,7 +217,7 @@ function AdminPage({ onLogout }) {
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 font-sans text-slate-900">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-8 rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+        <header className="mb-8 rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-base font-bold uppercase tracking-wide text-indigo-600/80">Admin Dashboard</p>
@@ -307,7 +307,7 @@ function AnalyticsScreen({ analytics }) {
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <div className="rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8" key={card.label}>
+            <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8" key={card.label}>
               <div className="mb-6 flex items-center justify-between gap-3">
                 <span className="text-sm font-semibold tracking-tight text-slate-500">{card.label}</span>
                 <span className="flex size-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
@@ -321,17 +321,17 @@ function AnalyticsScreen({ analytics }) {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+        <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
           <p className="text-sm font-semibold tracking-tight text-slate-500">Average Score</p>
           <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">{analytics?.average_score_percent ?? 0}%</p>
         </div>
-        <div className="rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+        <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
           <p className="text-sm font-semibold tracking-tight text-slate-500">Average Time</p>
           <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
             {formatTime(analytics?.average_completion_time_seconds ?? 0)}
           </p>
         </div>
-        <div className="rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+        <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
           <p className="text-sm font-semibold tracking-tight text-slate-500">Inactive Questions</p>
           <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
             {analytics?.inactive_questions ?? 0}
@@ -351,7 +351,7 @@ function UsersScreen({ users }) {
   const visibleUsers = users.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <section className="rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+    <section className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
       <div className="mb-8">
         <p className="text-sm font-bold uppercase tracking-wide text-indigo-600/80">User Login List</p>
         <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">Google sign-ins</h2>
@@ -469,7 +469,7 @@ function QuestionsScreen({
 
   return (
     <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-      <div className="rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8 h-fit">
+      <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8 h-fit">
         <div className="mb-8 flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-indigo-600/80">Question Editor</p>
@@ -557,7 +557,7 @@ function QuestionsScreen({
         </form>
       </div>
 
-      <div className="rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+      <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
         <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-indigo-600/80">Question Bank</p>
@@ -650,7 +650,7 @@ function QuestionsScreen({
 
 function SettingsScreen({ saveSettings, setSettings, settings }) {
   return (
-    <section className="max-w-2xl rounded-3xl border-0 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+    <section className="max-w-2xl rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
       <div className="mb-8">
         <p className="text-sm font-bold uppercase tracking-wide text-indigo-600/80">Settings</p>
         <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">Quiz controls</h2>
