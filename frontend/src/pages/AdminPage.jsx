@@ -293,6 +293,14 @@ function AdminPage({ onLogout }) {
 }
 
 function AnalyticsScreen({ analytics }) {
+  const [showChart, setShowChart] = useState(false);
+
+  useEffect(() => {
+    // Slight delay so the animation smoothly triggers after mounting
+    const timer = setTimeout(() => setShowChart(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const cards = [
     { label: "Total Questions", value: analytics?.total_questions ?? 0, icon: ListChecks },
     { label: "Active Questions", value: analytics?.active_questions ?? 0, icon: CheckCircle2 },
@@ -300,6 +308,13 @@ function AnalyticsScreen({ analytics }) {
     { label: "User Logins", value: analytics?.total_logins ?? 0, icon: Users },
     { label: "Completed Sessions", value: analytics?.completed_sessions ?? 0, icon: Activity },
   ];
+
+  const funnelData = [
+    { label: "Total Logins", value: analytics?.total_logins ?? 0, color: "from-indigo-500 to-purple-500" },
+    { label: "Unique Players", value: analytics?.total_players ?? 0, color: "from-purple-500 to-pink-500" },
+    { label: "Quizzes Finished", value: analytics?.completed_sessions ?? 0, color: "from-pink-500 to-rose-500" },
+  ];
+  const maxFunnel = Math.max(...funnelData.map((d) => d.value), 1);
 
   return (
     <section className="grid gap-6">
@@ -320,22 +335,47 @@ function AnalyticsScreen({ analytics }) {
         })}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
-          <p className="text-sm font-semibold tracking-tight text-slate-500">Average Score</p>
-          <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">{analytics?.average_score_percent ?? 0}%</p>
+      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+        <div className="flex flex-col justify-between rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+          <div className="mb-8">
+            <h3 className="text-lg font-extrabold tracking-tight text-slate-900">Engagement Funnel</h3>
+            <p className="text-sm font-medium text-slate-500">Player conversion from login to quiz completion</p>
+          </div>
+          <div className="flex h-56 items-end justify-around gap-4 sm:gap-8">
+            {funnelData.map((item) => (
+              <div key={item.label} className="group flex h-full w-full flex-col items-center justify-end gap-3">
+                <div className="relative flex w-full max-w-[100px] flex-1 flex-col justify-end rounded-t-xl bg-slate-100/50">
+                  <div
+                    className={`w-full rounded-t-xl bg-gradient-to-t ${item.color} shadow-lg shadow-indigo-200/50 transition-all duration-1000 ease-out`}
+                    style={{ height: showChart ? `${Math.max((item.value / maxFunnel) * 100, 4)}%` : "0%" }}
+                  />
+                  <span className="absolute -top-8 w-full text-center text-sm font-bold text-slate-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    {item.value}
+                  </span>
+                </div>
+                <span className="text-center text-xs font-semibold text-slate-500 sm:text-sm">{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
-          <p className="text-sm font-semibold tracking-tight text-slate-500">Average Time</p>
-          <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
-            {formatTime(analytics?.average_completion_time_seconds ?? 0)}
-          </p>
-        </div>
-        <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
-          <p className="text-sm font-semibold tracking-tight text-slate-500">Inactive Questions</p>
-          <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
-            {analytics?.inactive_questions ?? 0}
-          </p>
+
+        <div className="grid gap-6">
+          <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+            <p className="text-sm font-semibold tracking-tight text-slate-500">Average Score</p>
+            <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">{analytics?.average_score_percent ?? 0}%</p>
+          </div>
+          <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+            <p className="text-sm font-semibold tracking-tight text-slate-500">Average Time</p>
+            <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
+              {formatTime(analytics?.average_completion_time_seconds ?? 0)}
+            </p>
+          </div>
+          <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+            <p className="text-sm font-semibold tracking-tight text-slate-500">Inactive Questions</p>
+            <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
+              {analytics?.inactive_questions ?? 0}
+            </p>
+          </div>
         </div>
       </div>
     </section>
