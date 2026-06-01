@@ -79,7 +79,9 @@ function LandingPage({ onDashboard }) {
               </button>
               <div
                 aria-hidden="true"
-                className="absolute inset-0 z-20 overflow-hidden rounded-full opacity-0"
+                className={`absolute inset-0 z-20 overflow-hidden rounded-full opacity-0 ${
+                  isReady ? "pointer-events-auto" : "pointer-events-none"
+                }`}
                 ref={googleButtonRef}
               />
             </div>

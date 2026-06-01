@@ -38,7 +38,7 @@ export function useGoogleSignIn({ buttonRef, onCredential, onError }) {
           size: "large",
           shape: "pill",
           text: "continue_with",
-          width: Math.min(buttonRef.current.offsetWidth || 360, 400),
+          width: Math.min(Math.max(buttonRef.current.offsetWidth || 260, 260), 400),
         });
       }
 
