@@ -61,30 +61,29 @@ function LandingPage({ onDashboard }) {
           </button>
         ) : (
           <div className="flex w-full flex-col items-center gap-4 sm:w-auto">
-            <div className="relative inline-flex w-full sm:w-auto">
+            {clientId ? (
+              <>
+                <div className={`flex min-h-11 min-w-64 items-center justify-center ${!isReady ? "hidden" : ""}`} ref={googleButtonRef} />
+                {!isReady && (
+                  <button
+                    className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition-all hover:scale-105 hover:from-indigo-500 hover:to-purple-500 active:scale-95 sm:w-auto sm:text-lg"
+                    onClick={() => setError("Google Sign-In is blocked. Please disable your ad blocker, tracking protection, or Brave shields for this site.")}
+                    type="button"
+                  >
+                    <span>{isSigningIn ? "Signing in..." : "Log in to start quiz"}</span>
+                  </button>
+                )}
+              </>
+            ) : (
               <button
-                className="group relative inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition-all hover:scale-105 hover:from-indigo-500 hover:to-purple-500 active:scale-95 disabled:opacity-70 disabled:hover:scale-100 sm:w-auto sm:text-lg"
-                onClick={() => {
-                  if (!clientId) {
-                    setError("Google client ID is not configured.");
-                  } else if (!isReady) {
-                    setError("Google Sign-In is still loading. Try again in a moment.");
-                  }
-                }}
-                disabled={isSigningIn}
+                className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition-all hover:scale-105 hover:from-indigo-500 hover:to-purple-500 active:scale-95 sm:w-auto sm:text-lg"
+                onClick={() => setError("Google client ID is not configured.")}
                 type="button"
               >
-                <span>{isSigningIn ? "Signing in..." : "Log in to start quiz"}</span>
-                {!isSigningIn && <ChevronRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />}
+                <span>Log in to start quiz</span>
+                <ChevronRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </button>
-              <div
-                aria-hidden="true"
-                className={`absolute inset-0 z-20 overflow-hidden rounded-full opacity-0 ${
-                  isReady ? "pointer-events-auto" : "pointer-events-none"
-                }`}
-                ref={googleButtonRef}
-              />
-            </div>
+            )}
             {error && <p className="max-w-sm rounded-xl bg-red-50 px-4 py-3 text-sm font-medium text-red-600">{error}</p>}
           </div>
         )}

@@ -52,13 +52,22 @@ function LoginPage({ onBack, onSuccess }) {
         </div>
 
         <div className="space-y-4">
-          <div className="flex min-h-12 justify-center" ref={buttonRef} />
+          <div className={`flex min-h-12 justify-center ${!isReady ? "hidden" : ""}`} ref={buttonRef} />
 
-          {isSigningIn && <p className="text-center text-sm font-medium text-[#86868b]">Signing you in...</p>}
-          {!isReady && clientId && <p className="text-center text-sm font-medium text-[#86868b]">Loading Google Sign-In...</p>}
+          {!isReady && clientId && (
+            <Button 
+              className="w-full bg-indigo-600 text-white hover:bg-indigo-500" 
+              onClick={() => setError("Google Sign-In is blocked. Please disable your ad blocker, tracking protection, or Brave shields.")} 
+              type="button"
+            >
+              Log in to start quiz
+            </Button>
+          )}
+
+          {isSigningIn && <p className="text-center text-sm font-medium text-slate-500">Signing you in...</p>}
           {error && <p className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-600">{error}</p>}
 
-          {!clientId && <p className="text-center text-sm font-medium text-[#86868b]">Add your Google web client ID to enable login.</p>}
+          {!clientId && <p className="text-center text-sm font-medium text-slate-500">Add your Google web client ID to enable login.</p>}
           <Button className="w-full" onClick={onBack} type="button" variant="ghost">
             Back to landing
           </Button>
