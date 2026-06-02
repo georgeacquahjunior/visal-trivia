@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 
-import { verifyGoogleCredential } from "../api/client.js";
+import { verifyGoogleCredential, verifyName } from "../api/client.js";
 
 const AuthContext = createContext(null);
 
@@ -31,14 +31,27 @@ export function AuthProvider({ children }) {
     return nextUser;
   }, []);
 
+  const loginWithName = useCallback(async (name) => {
+    const { user: localUser } = await verifyName(name);
+    const nextUser = {
+      ...localUser,
+      credential: "",
+      provider: "local",
+      loggedInAt: new Date().toISOString(),
+    };
+    window.localStorage.setItem("visal_trivia_user", JSON.stringify(nextUser));
+    setUser(nextUser);
+    return nextUser;
+  }, []);
+
   const logout = useCallback(() => {
     window.localStorage.removeItem("visal_trivia_user");
     setUser(null);
   }, []);
 
   const value = useMemo(
-    () => ({ user, loginWithGoogleCredential, logout }),
-    [loginWithGoogleCredential, logout, user],
+    () => ({ user, loginWithGoogleCredential, loginWithName, logout }),
+    [loginWithGoogleCredential, loginWithName, logout, user],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

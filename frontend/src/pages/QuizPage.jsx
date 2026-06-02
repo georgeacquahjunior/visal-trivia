@@ -1,4 +1,4 @@
-import { Clock, Home, RotateCcw, Sparkles, Target, Trophy, Zap } from "lucide-react";
+import { Clock, Home, Layers, RotateCcw, Sparkles, Target, Trophy, Zap, ArrowRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { checkAnswer, getQuizSettings, startQuiz, submitQuiz } from "../api/client.js";
@@ -229,9 +229,9 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     const percentage = Math.round((result.score / result.total_questions) * 100);
     return (
       <div className="flex min-h-[calc(100vh-150px)] items-center justify-center p-4">
-        <div className="glass-card result-card-spotlight relative w-full max-w-lg overflow-hidden p-8 text-center">
+        <div className="glass-card relative w-full max-w-lg overflow-hidden p-8 text-center">
           <div className="relative z-10">
-            <div className="mx-auto mb-6 flex size-24 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-[0_0_30px_rgba(99,102,241,0.45)]">
+            <div className="mx-auto mb-6 flex size-24 items-center justify-center rounded-full bg-blue-600 shadow-sm">
               <Trophy className="size-12 text-white" aria-hidden="true" />
             </div>
 
@@ -258,7 +258,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
 
             <div className="flex flex-col gap-4 sm:flex-row">
               <button
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 font-bold text-white shadow-lg shadow-indigo-500/20 transition-colors hover:bg-indigo-500"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:scale-105"
                 onClick={resetQuiz}
                 type="button"
               >
@@ -266,7 +266,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                 Play Again
               </button>
               <button
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 font-bold text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/60 backdrop-blur-md px-4 py-3 font-bold text-slate-700 shadow-sm transition-all hover:shadow-lg hover:border-blue-300"
                 onClick={onDashboard}
                 type="button"
               >
@@ -276,7 +276,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
             </div>
 
             <button
-              className="mt-4 text-sm font-semibold text-indigo-600 transition hover:text-indigo-500"
+              className="mt-4 text-sm font-semibold text-blue-600 transition hover:text-blue-500"
               onClick={onShowLeaderboard}
               type="button"
             >
@@ -292,7 +292,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     return (
       <div className="mx-auto max-w-md rounded border border-rose-200 bg-rose-50 p-5 text-center">
         <p className="text-sm font-semibold text-rose-700">{error}</p>
-        <Button className="mt-4 bg-indigo-600 hover:bg-indigo-500" onClick={beginQuiz} disabled={isSubmitting}>
+        <Button className="mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg" onClick={beginQuiz} disabled={isSubmitting}>
           <Sparkles size={17} aria-hidden="true" />
           Try again
         </Button>
@@ -318,7 +318,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)] transition-all duration-500"
+            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -326,8 +326,8 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
 
       <div className="w-full animate-rise-in">
         <div className="mb-6 flex flex-col items-center justify-center gap-4 md:flex-row md:gap-6">
-          <div className="flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-4 py-2 text-sm font-semibold text-indigo-600">
-            <span className="size-2 rounded-full bg-indigo-500 animate-pulse" />
+          <div className="flex items-center gap-2 rounded-full border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm">
+            <Layers className="size-4 text-blue-600" aria-hidden="true" />
             Category: {currentQuestion.category}
           </div>
 
@@ -343,15 +343,15 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                 fill="transparent"
                 strokeDasharray={circumference}
                 strokeDashoffset={circumference - circumference * timerProgress}
-                className="text-purple-600 transition-all duration-1000 ease-linear"
+                className="text-blue-600 transition-all duration-1000 ease-linear"
               />
             </svg>
             <span className="absolute text-2xl font-mono font-bold text-slate-900">{formatTime(remaining)}</span>
           </div>
 
-          <div className="flex items-center gap-2 rounded-full border border-pink-100 bg-pink-50 px-4 py-2 text-sm font-semibold text-pink-600">
-            <Zap className="size-4" aria-hidden="true" />
-            Difficulty: Rapid Fire
+          <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-100 px-4 py-2 text-sm font-semibold text-emerald-700 shadow-sm">
+            <Zap className="size-4 text-emerald-600" aria-hidden="true" />
+            Difficulty: {quizSettings?.difficulty || "Standard"}
           </div>
         </div>
 
@@ -373,8 +373,8 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                     : isWrongSelection
                       ? "border-rose-500 bg-rose-50 text-rose-900 shadow-[0_0_20px_rgba(244,63,94,0.14)]"
                       : selected
-                    ? "border-indigo-500 bg-indigo-50 text-indigo-900 shadow-[0_0_20px_rgba(99,102,241,0.18)]"
-                    : "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-indigo-500/50 hover:shadow-md"
+                    ? "border-blue-500 bg-blue-50 text-blue-900 shadow-[0_0_20px_rgba(59,130,246,0.18)]"
+                    : "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-blue-500/50 hover:shadow-md"
                 }`}
                 disabled={Boolean(revealedAnswer) || isSubmitting}
                 key={option}
@@ -388,15 +388,15 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                       : isWrongSelection
                         ? "bg-rose-500 text-white"
                         : selected
-                      ? "bg-indigo-500 text-white"
-                      : "bg-slate-100 text-slate-500 group-hover:bg-indigo-500 group-hover:text-white"
+                      ? "bg-blue-500 text-white"
+                      : "bg-slate-100 text-slate-500 group-hover:bg-blue-500 group-hover:text-white"
                   }`}
                 >
                   {letter}
                 </span>
                 <span className="text-base font-semibold sm:text-lg md:text-xl">{option}</span>
                 {!selected && !revealedAnswer && (
-                  <span className="absolute right-3 top-3 size-2 rounded-full bg-indigo-500 opacity-0 shadow-[0_0_8px_rgba(99,102,241,1)] transition-opacity group-hover:opacity-100" />
+                  <span className="absolute right-3 top-3 size-2 rounded-full bg-blue-500 opacity-0 shadow-[0_0_8px_rgba(59,130,246,1)] transition-opacity group-hover:opacity-100" />
                 )}
                 {isCorrectOption && (
                   <span className="absolute right-4 top-4 text-sm font-bold text-emerald-600">Correct</span>
@@ -410,28 +410,18 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
         </div>
 
         {error && <p className="mt-4 rounded bg-rose-50 p-3 text-sm text-rose-700">{error}</p>}
-        {revealedResult && (
-          <div
-            className={`mt-6 rounded-xl border p-4 text-center shadow-sm ${
-              revealedResult.is_correct
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-rose-200 bg-rose-50 text-rose-800"
-            }`}
-          >
-            <p className="font-bold">{revealedResult.is_correct ? "Nice, that is correct." : "Not quite."}</p>
-            {!revealedResult.is_correct && (
-              <p className="mt-1 text-sm">Correct answer: {revealedResult.correct_answer}</p>
-            )}
-          </div>
-        )}
+        {/* Removed the post-answer info panel to keep the flow focused on the next question. */}
 
         <div className="mt-8 flex justify-center">
           <Button
-            className="min-w-44 bg-indigo-600 hover:bg-indigo-500"
+            className="min-w-44 border border-blue-300 bg-white/90 text-blue-700 flex items-center justify-between px-5 py-3  rounded-full hover:shadow-md transition hover:bg-white/90"
             disabled={isSubmitting || !revealedAnswer}
             onClick={handleNext}
           >
-            {isLastQuestion ? "Submit Score" : "Next Question"}
+            <span className="pl-1">{isLastQuestion ? "Submit Score" : "Next Question"}</span>
+            <span className="ml-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
+              <ArrowRight className="size-4" aria-hidden="true" />
+            </span>
           </Button>
         </div>
       </div>

@@ -54,6 +54,13 @@ export function verifyGoogleCredential(credential) {
   });
 }
 
+export function verifyName(name) {
+  return request("/api/auth/name", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
 export function getCategories() {
   return request("/api/categories");
 }

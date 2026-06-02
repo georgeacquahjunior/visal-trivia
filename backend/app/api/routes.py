@@ -7,13 +7,14 @@ from google.oauth2 import id_token
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
+from uuid import uuid4
 
 from app.api.deps import get_db
 from app.core.config import settings
 from app.core.security import require_google_admin
 from app.models import Category, Player, Question, QuizSession, QuizSetting, Score, UserLogin
 from app.schemas.admin import AdminAnalytics, AdminQuestionImportResult, AdminUserLogin
-from app.schemas.auth import AuthUser, GoogleAuthRequest, GoogleAuthResponse
+from app.schemas.auth import AuthUser, GoogleAuthRequest, GoogleAuthResponse, NameAuthRequest
 from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
 from app.schemas.question import QuestionCreate, QuestionRead, QuestionUpdate
 from app.schemas.quiz import (
@@ -84,6 +85,23 @@ def verify_google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db
             email=id_info["email"],
             role=role,
             picture=id_info.get("picture"),
+        )
+    )
+
+
+@router.post("/auth/name", response_model=GoogleAuthResponse, tags=["auth"])
+def verify_name_login(payload: NameAuthRequest) -> GoogleAuthResponse:
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name is required")
+
+    return GoogleAuthResponse(
+        user=AuthUser(
+            id=f"guest-{uuid4().hex}",
+            name=name,
+            email="",
+            role="player",
+            picture=None,
         )
     )
 

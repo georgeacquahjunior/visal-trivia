@@ -1,17 +1,16 @@
 import {
-  Activity,
   ArrowRight,
-  Award,
-  Clock,
-  Crown,
+  Layers,
   LogOut,
   Play,
-  Sparkles,
+  TrendingUp,
+  Zap,
+  Award,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import Button from "../components/Button.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { getLeaderboard } from "../api/client.js";
 import { formatTime } from "../utils/format.js";
 
 function getInitials(name = "") {
@@ -30,6 +29,8 @@ function HomePage({
 }) {
   const { logout, user } = useAuth();
   const [recentResults, setRecentResults] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const savedResults = window.localStorage.getItem(
@@ -39,12 +40,31 @@ function HomePage({
     setRecentResults(savedResults ? JSON.parse(savedResults) : []);
   }, [user.id]);
 
+  useEffect(() => {
+    async function fetchLeaderboard() {
+      try {
+        setLoading(true);
+        const data = await getLeaderboard(100);
+        setLeaderboard(data);
+      } catch (err) {
+        console.error("Failed to fetch leaderboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchLeaderboard();
+  }, []);
+
   const stats = useMemo(() => {
     if (recentResults.length === 0) {
       return {
         highestScore: 0,
-        quizzesPlayed: 0,
+        totalQuizzes: 0,
         avgTime: 0,
+        avgAccuracy: 0,
+        userRank: "-",
+        totalUsers: leaderboard.length,
       };
     }
 
@@ -59,12 +79,27 @@ function HomePage({
       ) / recentResults.length,
     );
 
+    const avgAccuracy = Math.round(
+      recentResults.reduce(
+        (total, result) => total + result.percentage,
+        0,
+      ) / recentResults.length,
+    );
+
+    // Find user rank in leaderboard by matching name or ID
+    const userRank = leaderboard.findIndex(
+      (entry) => entry.player_name === user.name || entry.player_id === user.id
+    ) + 1;
+
     return {
       highestScore,
-      quizzesPlayed: recentResults.length,
+      totalQuizzes: recentResults.length,
       avgTime,
+      avgAccuracy,
+      userRank: userRank > 0 ? `#${userRank}` : "-",
+      totalUsers: leaderboard.length,
     };
-  }, [recentResults]);
+  }, [recentResults, leaderboard, user.name, user.id]);
 
   function handleLogout() {
     logout();
@@ -72,248 +107,214 @@ function HomePage({
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050816] text-white">
-      {/* Background */}
-      <div className="absolute inset-0">
-        <div className="absolute left-[-10%] top-[-10%] h-[500px] w-[500px] rounded-full bg-violet-600/20 blur-3xl" />
-        <div className="absolute bottom-[-20%] right-[-10%] h-[500px] w-[500px] rounded-full bg-cyan-500/20 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_35%)]" />
-      </div>
-
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col px-5 py-6 sm:px-8 lg:px-10">
-        {/* NAV */}
-        <header className="mb-10 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="flex size-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-xl">
-              <Sparkles className="size-6 text-violet-300" />
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50">
+      {/* Header */}
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md px-6 py-4 sm:px-8 sticky top-0 z-40">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-lg">
+              <Layers size={24} strokeWidth={1.8} />
             </div>
-
             <div>
-              <h1 className="text-lg font-semibold tracking-tight">
-                Nexus Trivia
+              <p className="text-sm font-bold text-slate-950">placeIT Trivia</p>
+              <p className="text-xs text-slate-500">Test your knowledge</p>
+            </div>
+          </div>
+          <button
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+            onClick={handleLogout}
+            type="button"
+          >
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <div className="mx-auto max-w-6xl px-6 py-8 sm:px-8">
+        {/* Welcome Section */}
+        <div className="mb-10 rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-8 shadow-lg">
+          <div className="flex items-start gap-6 mb-8">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-3xl font-bold text-white shadow-lg">
+              {user.picture ? (
+                <img
+                  alt={`${user.name} avatar`}
+                  className="h-full w-full rounded-2xl object-cover"
+                  src={user.picture}
+                />
+              ) : (
+                getInitials(user.name)
+              )}
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold uppercase tracking-widest text-blue-600">
+                Welcome back
+              </p>
+              <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+                {user.name}
               </h1>
-              <p className="text-sm text-white/50">
-                Intelligent Quiz Platform
+              <p className="mt-3 text-base leading-6 text-slate-600">
+                Keep improving your scores and climb the leaderboard with every quiz you take.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <button
-              className="flex h-11 items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 text-sm font-medium text-white/80 backdrop-blur-xl transition-all duration-300 hover:bg-white/10"
-              onClick={handleLogout}
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 font-semibold text-white shadow-lg transition hover:shadow-xl hover:scale-105"
+              onClick={onStartQuiz}
               type="button"
             >
-              <LogOut size={16} />
-              <span className="hidden sm:inline">Logout</span>
+              <Play size={18} fill="currentColor" />
+              Start Quiz
+            </button>
+            <button
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 font-semibold text-slate-950 transition hover:bg-slate-50"
+              onClick={onShowLeaderboard}
+              type="button"
+            >
+              Leaderboard
+              <ArrowRight size={18} />
             </button>
           </div>
-        </header>
+        </div>
 
-        {/* HERO */}
-        <section className="mb-10 grid gap-6 lg:grid-cols-[1.4fr_0.9fr]">
-          {/* LEFT */}
-          <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-white/5 p-8 backdrop-blur-2xl">
-            <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-violet-500/20 blur-3xl" />
-
-            <div className="relative z-10">
-              <div className="mb-8 flex flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left">
-                {user.picture ? (
-                  <img
-                    alt={`${user.name} avatar`}
-                    className="size-20 rounded-3xl object-cover ring-2 ring-white/20"
-                    src={user.picture}
-                  />
-                ) : (
-                  <div className="flex size-20 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-400 text-2xl font-bold text-white shadow-2xl">
-                    {getInitials(user.name)}
-                  </div>
-                )}
-
-                <div>
-                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-                    <Crown className="size-3 text-yellow-400" />
-                    {user.role ?? "player"}
-                  </div>
-
-                  <h2 className="text-4xl font-semibold tracking-tight text-white">
-                    Welcome back,
-                  </h2>
-
-                  <h3 className="mt-1 text-4xl font-bold tracking-tight text-transparent bg-gradient-to-r from-white to-white/60 bg-clip-text">
-                    {user.name}
-                  </h3>
-                </div>
-              </div>
-
-              <p className="mx-auto max-w-2xl text-base leading-relaxed text-white/60 sm:mx-0">
-                Continue your challenge journey, improve your scores, and climb
-                the leaderboard with every quiz attempt.
+        {/* Stats Grid */}
+        <div className="mb-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Highest Score */}
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md hover:shadow-lg transition">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Highest Score
               </p>
-
-              <div className="mt-10 flex flex-col flex-wrap items-center gap-4 sm:flex-row sm:justify-start">
-                <button
-                  className="group flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-white px-7 text-base font-semibold text-black transition-all duration-300 hover:scale-[1.03] sm:w-auto"
-                  onClick={onStartQuiz}
-                  type="button"
-                >
-                  <Play
-                    className="size-5 fill-current transition-transform group-hover:translate-x-1"
-                    aria-hidden="true"
-                  />
-                  Start Quiz
-                </button>
-
-                <button
-                  className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-7 text-base font-semibold text-white/80 backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:w-auto"
-                  onClick={onShowLeaderboard}
-                  type="button"
-                >
-                  Leaderboard
-                  <ArrowRight className="size-4" />
-                </button>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
+                <Trophy size={18} className="text-blue-600" />
               </div>
             </div>
+            <p className="text-4xl font-bold text-slate-950">{stats.highestScore}%</p>
+            <p className="mt-2 text-sm text-slate-500">
+              {stats.totalQuizzes} {stats.totalQuizzes === 1 ? "quiz" : "quizzes"}
+            </p>
           </div>
 
-          {/* RIGHT */}
-          <div className="grid gap-5">
-            <StatCard
-              icon={<Award className="size-6 text-yellow-300" />}
-              label="Highest Score"
-              value={`${stats.highestScore}%`}
-              glow="from-yellow-500/20 to-orange-500/10"
-            />
-
-            <StatCard
-              icon={<Activity className="size-6 text-emerald-300" />}
-              label="Quizzes Played"
-              value={String(stats.quizzesPlayed)}
-              glow="from-emerald-500/20 to-cyan-500/10"
-            />
-
-            <StatCard
-              icon={<Clock className="size-6 text-cyan-300" />}
-              label="Average Time"
-              value={formatTime(stats.avgTime)}
-              glow="from-cyan-500/20 to-blue-500/10"
-            />
-          </div>
-        </section>
-
-        {/* RECENT ACTIVITY */}
-        <section className="flex-1 rounded-[32px] border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-          <div className="mb-8 flex flex-col items-center justify-between gap-4 text-center sm:flex-row sm:text-left">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight text-white">
-                Recent Activity
-              </h2>
-
-              <p className="mt-1 text-sm text-white/50">
-                Your latest quiz performance and progress
+          {/* Average Accuracy */}
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md hover:shadow-lg transition">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Avg Accuracy
               </p>
-            </div>
-
-            <Button
-              className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-white/80 hover:bg-white/10 sm:w-auto"
-              onClick={onShowLeaderboard}
-              variant="ghost"
-            >
-              Global Rankings
-            </Button>
-          </div>
-
-          {recentResults.length === 0 ? (
-            <div className="flex min-h-[300px] flex-col items-center justify-center rounded-3xl border border-dashed border-white/10 bg-black/10 text-center">
-              <div className="mb-5 flex size-20 items-center justify-center rounded-full bg-white/5">
-                <Sparkles className="size-8 text-white/40" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100">
+                <TrendingUp size={18} className="text-emerald-600" />
               </div>
-
-              <h3 className="text-xl font-semibold text-white">
-                No quiz activity yet
-              </h3>
-
-              <p className="mt-2 max-w-md text-sm leading-relaxed text-white/50">
-                Start your first challenge and your recent quiz history will
-                appear here beautifully.
-              </p>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {recentResults.slice(0, 6).map((result) => (
+            <p className="text-4xl font-bold text-slate-950">{stats.avgAccuracy}%</p>
+            <p className="mt-2 text-sm text-slate-500">Last {Math.min(5, stats.totalQuizzes)} quizzes</p>
+          </div>
+
+          {/* Current Rank */}
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md hover:shadow-lg transition">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Global Rank
+              </p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100">
+                <Award size={18} className="text-yellow-600" />
+              </div>
+            </div>
+            <p className="text-4xl font-bold text-slate-950">{stats.userRank}</p>
+            <p className="mt-2 text-sm text-slate-500">of {stats.totalUsers} players</p>
+          </div>
+
+          {/* Avg Time */}
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md hover:shadow-lg transition">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Avg Time
+              </p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100">
+                <Zap size={18} className="text-purple-600" />
+              </div>
+            </div>
+            <p className="text-4xl font-bold text-slate-950">{formatTime(stats.avgTime)}</p>
+            <p className="mt-2 text-sm text-slate-500">per quiz</p>
+          </div>
+        </div>
+
+        {/* Recent Results */}
+        {recentResults.length > 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md">
+            <h2 className="text-xl font-bold text-slate-950 mb-6">Recent Activity</h2>
+            <div className="space-y-3">
+              {recentResults.slice(0, 5).map((result, index) => (
                 <div
-                  className="group flex flex-col items-center justify-between gap-4 rounded-3xl border border-white/10 bg-black/10 p-5 transition-all duration-300 hover:border-white/20 hover:bg-white/[0.06] sm:flex-row sm:gap-0"
-                  key={result.id}
+                  key={result.id || index}
+                  className="flex items-center justify-between rounded-xl bg-slate-50 p-4 hover:bg-slate-100 transition"
                 >
-                  <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:gap-5 sm:text-left">
-                    <div className="relative">
-                      <div className="absolute inset-0 rounded-2xl bg-violet-500/20 blur-xl" />
-
-                      <div className="relative flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-cyan-400 text-lg font-bold text-white shadow-2xl">
-                        {result.percentage}%
-                      </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 font-bold text-blue-600">
+                      {result.percentage}%
                     </div>
-
                     <div>
-                      <div className="mb-1 flex items-center gap-2">
-                        <span className="text-lg font-semibold text-white">
-                          {result.correctAnswers} Correct
-                        </span>
-
-                        <span className="text-white/30">•</span>
-
-                        <span className="text-sm text-red-300">
-                          {result.wrongAnswers} Wrong
-                        </span>
-                      </div>
-
-                      <div className="text-sm text-white/40">
-                        {new Date(result.createdAt).toLocaleString()}
-                      </div>
+                      <p className="font-medium text-slate-950">
+                        {result.correctAnswers} correct, {result.wrongAnswers} wrong
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {new Date(result.createdAt).toLocaleDateString()}
+                      </p>
                     </div>
                   </div>
-
-                  <div className="text-center sm:text-right">
-                    <div className="text-xl font-semibold tracking-tight text-white">
-                      {formatTime(result.timeSpent)}
-                    </div>
-
-                    <div className="mt-1 text-xs uppercase tracking-[0.2em] text-white/30">
-                      Completion Time
-                    </div>
-                  </div>
+                  <p className="text-sm font-semibold text-slate-600">
+                    {formatTime(result.timeSpent)}
+                  </p>
                 </div>
               ))}
             </div>
-          )}
-        </section>
+          </div>
+        )}
+
+        {recentResults.length === 0 && !loading && (
+          <div className="rounded-2xl border border-dashed border-slate-200 bg-white/60 backdrop-blur-md p-12 text-center">
+            <div className="mb-4 flex justify-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100">
+                <Play size={32} className="text-blue-600" />
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-slate-950">No quiz activity yet</h3>
+            <p className="mt-2 text-slate-600">
+              Start your first quiz to see your stats and climb the leaderboard!
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );
 }
 
-function StatCard({ icon, label, value, glow }) {
+// Trophy icon component
+function Trophy(props) {
   return (
-    <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-white/5 p-6 backdrop-blur-2xl">
-      <div
-        className={`absolute inset-0 bg-gradient-to-br ${glow}`}
-      />
-
-      <div className="relative z-10">
-        <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-white/10">
-          {icon}
-        </div>
-
-        <p className="text-sm font-medium text-white/50">
-          {label}
-        </p>
-
-        <h3 className="mt-2 text-4xl font-bold tracking-tight text-white">
-          {value}
-        </h3>
-      </div>
-    </div>
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M6 9H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-2" />
+      <path d="M8 5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2" />
+      <path d="M12 12v4" />
+      <path d="M9 21h6" />
+    </svg>
   );
 }
 
 export default HomePage;
+
+

@@ -5,6 +5,10 @@ class GoogleAuthRequest(BaseModel):
     credential: str
 
 
+class NameAuthRequest(BaseModel):
+    name: str
+
+
 class AuthUser(BaseModel):
     id: str
     name: str

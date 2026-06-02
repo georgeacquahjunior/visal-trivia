@@ -34,7 +34,7 @@ export function useGoogleSignIn({ buttonRef, onCredential, onError }) {
       if (buttonRef.current) {
         buttonRef.current.innerHTML = "";
         window.google.accounts.id.renderButton(buttonRef.current, {
-          theme: "filled_blue",
+          theme: "outline",
           size: "large",
           shape: "pill",
           text: "continue_with",
