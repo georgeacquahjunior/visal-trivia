@@ -76,7 +76,7 @@ function LandingPage({ onDashboard }) {
             </h1>
 
             <p className="mx-auto mt-6 max-w-xl text-base leading-7 text-slate-600 sm:text-md">
-              The ultimate general-knowledge showdown. Test your brain, climb the leaderboard, and prove you're the sharpest in the room.
+              Test your general knowledge, climb the leaderboard, and prove you're the sharpest in the room.
             </p>
 
             <div className="mt-10 flex flex-col items-center justify-center gap-4">
