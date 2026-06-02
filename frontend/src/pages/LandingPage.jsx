@@ -61,7 +61,7 @@ function LandingPage({ onDashboard }) {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-white px-4 py-8 text-slate-950 sm:px-6">
-      <div className="w-full max-w-xl rounded-[40px] border border-slate-200 bg-white shadow-[0_40px_120px_-60px_rgba(15,23,42,0.35)]">
+      <div className="w-full max-w-xl rounded-[40px] border border-slate-200 bg-white">
         <div className="relative overflow-hidden rounded-[40px] bg-white">
           <div className="relative z-10 px-8 py-14 text-center sm:px-12 sm:py-16">
             <div className="mx-auto mb-8 grid h-20 w-20 place-items-center rounded-3xl bg-sky-500 text-white ">
