@@ -50,7 +50,7 @@ function AppContent() {
 
   if (activeTab === "quiz") {
     return (
-      <main className="min-h-screen bg-[#f5f5f7] px-4 py-6 font-sans text-[#1d1d1f] sm:px-6">
+      <main className="min-h-screen bg-white px-4 py-6 font-sans text-[#1d1d1f] sm:px-6">
         <QuizPage
           onDashboard={() => setView("home")}
           onShowLeaderboard={() => setActiveTab("leaderboard")}
