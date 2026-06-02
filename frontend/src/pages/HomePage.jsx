@@ -6,6 +6,7 @@ import {
   TrendingUp,
   Zap,
   Award,
+  Crown,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -31,6 +32,7 @@ function HomePage({
   const [recentResults, setRecentResults] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [displayedActivityCount, setDisplayedActivityCount] = useState(5);
 
   useEffect(() => {
     const savedResults = window.localStorage.getItem(
@@ -107,7 +109,7 @@ function HomePage({
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50">
+    <main className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md px-6 py-4 sm:px-8 sticky top-0 z-40">
         <div className="mx-auto flex max-w-6xl items-center justify-between">
@@ -116,17 +118,17 @@ function HomePage({
               <Layers size={24} strokeWidth={1.8} />
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-950">placeIT Trivia</p>
-              <p className="text-xs text-slate-500">Test your knowledge</p>
+              <p className="text-base font-bold text-slate-950 sm:text-lg">place<span className="text-blue-500">IT</span> Trivia</p>
+              <p className="hidden text-xs text-slate-500 sm:block">Test your knowledge</p>
             </div>
           </div>
           <button
-            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+            className="inline-flex items-center gap-2 rounded-lg p-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 sm:px-4"
             onClick={handleLogout}
             type="button"
           >
-            <LogOut size={16} />
-            Logout
+            <LogOut size={18} />
+            <span className="hidden sm:inline">Logout</span>
           </button>
         </div>
       </header>
@@ -134,9 +136,9 @@ function HomePage({
       {/* Main Content */}
       <div className="mx-auto max-w-6xl px-6 py-8 sm:px-8">
         {/* Welcome Section */}
-        <div className="mb-10 rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-8 shadow-lg">
-          <div className="flex items-start gap-6 mb-8">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-3xl font-bold text-white shadow-lg">
+        <div className="mb-10 rounded-2xl border border-slate-200 bg-white/60 p-6 backdrop-blur-md sm:p-8">
+          <div className="mb-8 flex flex-col items-center gap-6 text-center sm:flex-row sm:items-start sm:text-left">
+            <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 text-4xl font-bold text-white shadow-lg sm:h-20 sm:w-20 sm:text-3xl">
               {user.picture ? (
                 <img
                   alt={`${user.name} avatar`}
@@ -151,9 +153,15 @@ function HomePage({
               <p className="text-sm font-semibold uppercase tracking-widest text-blue-600">
                 Welcome back
               </p>
-              <h1 className="mt-2 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl">
-                {user.name}
-              </h1>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-3 sm:justify-start">
+                <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-5xl">
+                  {user.name}
+                </h1>
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-widest text-blue-700 shadow-sm">
+                  {user.role === "admin" ? <Crown size={14} aria-hidden="true" /> : <Award size={14} color="gold" aria-hidden="true" />}
+                  {user.role || "Player"}
+                </span>
+              </div>
               <p className="mt-3 text-base leading-6 text-slate-600">
                 Keep improving your scores and climb the leaderboard with every quiz you take.
               </p>
@@ -161,7 +169,7 @@ function HomePage({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-start">
             <button
               className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-6 font-semibold text-white shadow-lg transition hover:shadow-xl hover:scale-105"
               onClick={onStartQuiz}
@@ -184,7 +192,7 @@ function HomePage({
         {/* Stats Grid */}
         <div className="mb-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {/* Highest Score */}
-          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md hover:shadow-lg transition">
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 hover:shadow-lg transition">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                 Highest Score
@@ -200,7 +208,7 @@ function HomePage({
           </div>
 
           {/* Average Accuracy */}
-          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md hover:shadow-lg transition">
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 hover:shadow-lg transition">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                 Avg Accuracy
@@ -214,7 +222,7 @@ function HomePage({
           </div>
 
           {/* Current Rank */}
-          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md hover:shadow-lg transition">
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 hover:shadow-lg transition">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                 Global Rank
@@ -228,7 +236,7 @@ function HomePage({
           </div>
 
           {/* Avg Time */}
-          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md hover:shadow-lg transition">
+          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 hover:shadow-lg transition">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
                 Avg Time
@@ -244,10 +252,10 @@ function HomePage({
 
         {/* Recent Results */}
         {recentResults.length > 0 && (
-          <div className="rounded-2xl border border-slate-200 bg-white/60 backdrop-blur-md p-6 shadow-md">
+          <div className="rounded-2xl border border-slate-200 bg-white backdrop-blur-md p-6">
             <h2 className="text-xl font-bold text-slate-950 mb-6">Recent Activity</h2>
             <div className="space-y-3">
-              {recentResults.slice(0, 5).map((result, index) => (
+              {recentResults.slice(0, displayedActivityCount).map((result, index) => (
                 <div
                   key={result.id || index}
                   className="flex items-center justify-between rounded-xl bg-slate-50 p-4 hover:bg-slate-100 transition"
@@ -271,6 +279,18 @@ function HomePage({
                 </div>
               ))}
             </div>
+            
+            {recentResults.length > displayedActivityCount && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={() => setDisplayedActivityCount((prev) => prev + 5)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-slate-100 px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-200"
+                  type="button"
+                >
+                  Load More Activity
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -316,5 +336,3 @@ function Trophy(props) {
 }
 
 export default HomePage;
-
-
