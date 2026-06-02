@@ -228,7 +228,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
   if (result) {
     const percentage = Math.round((result.score / result.total_questions) * 100);
     return (
-      <div className="flex min-h-[calc(100vh-150px)] items-center justify-center p-4">
+      <div className="flex min-h-[calc(100vh-150px)] items-center justify-center p-4 bg-white">
         <div className="glass-card relative w-full max-w-lg overflow-hidden p-8 text-center">
           <div className="relative z-10">
             <div className="mx-auto mb-6 flex size-24 items-center justify-center rounded-full bg-blue-600 shadow-sm">
@@ -413,16 +413,17 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
         {/* Removed the post-answer info panel to keep the flow focused on the next question. */}
 
         <div className="mt-8 flex justify-center">
-          <Button
-            className="min-w-44 border border-blue-300 bg-white/90 text-blue-700 flex items-center justify-between px-5 py-3  rounded-full hover:shadow-md transition hover:bg-white/90"
+          <button
+            className="min-w-[12rem] max-w-[20rem] border border-blue-300 bg-white/90 text-blue-700 flex items-center justify-between gap-3 px-5 py-3 rounded-full transition hover:shadow-md hover:bg-white"
             disabled={isSubmitting || !revealedAnswer}
             onClick={handleNext}
+            type="button"
           >
-            <span className="pl-1">{isLastQuestion ? "Submit Score" : "Next Question"}</span>
-            <span className="ml-3 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
+            <span className="flex-1 text-center text-base font-semibold">{isLastQuestion ? "Submit Score" : "Next Question"}</span>
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
               <ArrowRight className="size-4" aria-hidden="true" />
             </span>
-          </Button>
+          </button>
         </div>
       </div>
     </div>
