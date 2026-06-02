@@ -160,7 +160,7 @@ def check_answer(payload: AnswerCheckRequest, db: Session = Depends(get_db)) -> 
 
 @router.get("/leaderboard", response_model=list[LeaderboardEntry], tags=["leaderboard"])
 def get_leaderboard(
-    limit: int = Query(default=10, ge=1, le=50),
+    limit: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
 ) -> list[LeaderboardEntry]:
     rows = db.execute(
