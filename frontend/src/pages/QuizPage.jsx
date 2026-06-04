@@ -1,7 +1,7 @@
-import { Clock, Home, Layers, RotateCcw, Sparkles, Target, Trophy, Zap, ArrowRight } from "lucide-react";
+import { ArrowRight, Clock, Copy, Home, Layers, RotateCcw, Sparkles, Target, Trophy, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { checkAnswer, getQuizSettings, startQuiz, submitQuiz } from "../api/client.js";
+import { checkAnswer, claimPrizeCode, getQuizSettings, startQuiz, submitQuiz } from "../api/client.js";
 import Button from "../components/Button.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import LoadingState from "../components/LoadingState.jsx";
@@ -32,6 +32,9 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
   const [quizSettings, setQuizSettings] = useState({
     question_limit: 7,
     quiz_time_seconds: DEFAULT_QUIZ_TIME_SECONDS,
+    attempts_allowed: 3,
+    pass_percentage: 70,
+    prize_code: "",
   });
   const [remaining, setRemaining] = useState(DEFAULT_QUIZ_TIME_SECONDS);
   const [result, setResult] = useState(null);
@@ -40,8 +43,13 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [prizeCodeMessage, setPrizeCodeMessage] = useState("");
+  const [prizeCode, setPrizeCode] = useState("");
+  const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
+  const [copyMessage, setCopyMessage] = useState("");
   const resultSavedRef = useRef(false);
   const autoStartRef = useRef(false);
+  const prizeClaimedRef = useRef(false);
 
   useEffect(() => {
     if (!result || !user?.id || resultSavedRef.current) {
@@ -68,6 +76,30 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
 
   const currentQuestion = session?.questions[currentIndex];
   const isLastQuestion = session && currentIndex === session.questions.length - 1;
+
+  useEffect(() => {
+    if (!result || !user?.name || !quizSettings?.pass_percentage || prizeClaimedRef.current) {
+      return;
+    }
+
+    const percentage = Math.round((result.score / result.total_questions) * 100);
+    const isWinner = percentage >= (quizSettings.pass_percentage ?? 70);
+    if (!isWinner) {
+      return;
+    }
+
+    prizeClaimedRef.current = true;
+
+    claimPrizeCode({ player_name: user.name })
+      .then((entry) => {
+        setPrizeCode(entry.code);
+        setIsPrizeModalOpen(true);
+        setPrizeCodeMessage("Your prize code is ready.");
+      })
+      .catch(() => {
+        setPrizeCodeMessage("Please collect your prize from the admin desk.");
+      });
+  }, [quizSettings.pass_percentage, result, user?.name]);
 
   const finishQuiz = useCallback(async () => {
     if (!session || isSubmitting || result) {
@@ -136,6 +168,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     setResult(null);
     setAnswerResults(null);
     setRevealedAnswer(null);
+    setPrizeCodeMessage("");
     setAnswers({});
     try {
       const settings = await getQuizSettings();
@@ -217,8 +250,31 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     setRemaining(quizSettings.quiz_time_seconds);
     setAnswerResults(null);
     setRevealedAnswer(null);
+    setPrizeCodeMessage("");
+    setPrizeCode("");
+    setIsPrizeModalOpen(false);
+    setCopyMessage("");
+    prizeClaimedRef.current = false;
     resultSavedRef.current = false;
     autoStartRef.current = false;
+  }
+
+  async function copyPrizeCode() {
+    if (!prizeCode) {
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(prizeCode);
+      setCopyMessage("Copied");
+    } catch {
+      setCopyMessage("Select and copy the code");
+    }
+  }
+
+  function closePrizeModal() {
+    setIsPrizeModalOpen(false);
+    setCopyMessage("");
   }
 
   if (isLoading) {
@@ -227,11 +283,12 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
 
   if (result) {
     const percentage = Math.round((result.score / result.total_questions) * 100);
+    const isWinner = percentage >= (quizSettings?.pass_percentage ?? 70);
     return (
       <div className="flex min-h-[calc(100vh-150px)] items-center justify-center p-4 bg-white">
         <div className="glass-card relative w-full max-w-lg overflow-hidden p-8 text-center">
           <div className="relative z-10">
-            <div className="mx-auto mb-6 flex size-24 items-center justify-center rounded-full bg-blue-600 shadow-sm">
+            <div className="mx-auto mb-6 flex size-24 items-center justify-center rounded-full bg-[#0066B3] shadow-sm">
               <Trophy className="size-12 text-white" aria-hidden="true" />
             </div>
 
@@ -256,17 +313,25 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
               />
             </div>
 
+            {isWinner && (
+              <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm font-semibold text-emerald-800 shadow-sm">
+                You reached the pass threshold. {prizeCodeMessage || "Preparing your prize code."}
+              </div>
+            )}
+
             <div className="flex flex-col gap-4 sm:flex-row">
+              {!isWinner && (
+                <button
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0066B3] to-[#0066B3] px-4 py-3 font-bold text-white shadow-lg shadow-[#0066B3]/20 transition-all hover:shadow-xl hover:scale-105"
+                  onClick={resetQuiz}
+                  type="button"
+                >
+                  <RotateCcw className="size-5" aria-hidden="true" />
+                  Play Again
+                </button>
+              )}
               <button
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:scale-105"
-                onClick={resetQuiz}
-                type="button"
-              >
-                <RotateCcw className="size-5" aria-hidden="true" />
-                Play Again
-              </button>
-              <button
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/60 backdrop-blur-md px-4 py-3 font-bold text-slate-700 shadow-sm transition-all hover:shadow-lg hover:border-blue-300"
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white/60 backdrop-blur-md px-4 py-3 font-bold text-slate-700 shadow-sm transition-all hover:shadow-lg hover:border-[#0066B3]"
                 onClick={onDashboard}
                 type="button"
               >
@@ -276,7 +341,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
             </div>
 
             <button
-              className="mt-4 text-sm font-semibold text-blue-600 transition hover:text-blue-500"
+              className="mt-4 text-sm font-semibold text-[#0066B3] transition hover:text-[#0066B3]"
               onClick={onShowLeaderboard}
               type="button"
             >
@@ -284,18 +349,73 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
             </button>
           </div>
         </div>
+        {isWinner && prizeCode && isPrizeModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 text-left shadow-2xl">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-[#0066B3]">Prize Unlocked</p>
+                  <h2 className="mt-2 text-2xl font-bold tracking-normal text-slate-950">Copy your code now</h2>
+                </div>
+                <button
+                  className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                  onClick={closePrizeModal}
+                  type="button"
+                  aria-label="Close prize code"
+                >
+                  <X className="size-5" aria-hidden="true" />
+                </button>
+              </div>
+              <p className="mb-4 text-sm font-medium text-slate-600">
+                This code cannot be returned to after this window is closed.
+              </p>
+              <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                <p className="break-all text-center font-mono text-2xl font-bold tracking-normal text-slate-950">{prizeCode}</p>
+              </div>
+              <button
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0066B3] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0066B3]/90"
+                onClick={copyPrizeCode}
+                type="button"
+              >
+                <Copy className="size-4" aria-hidden="true" />
+                {copyMessage || "Copy Code"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   if (!session && error) {
     return (
-      <div className="mx-auto max-w-md rounded border border-rose-200 bg-rose-50 p-5 text-center">
-        <p className="text-sm font-semibold text-rose-700">{error}</p>
-        <Button className="mt-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:shadow-lg" onClick={beginQuiz} disabled={isSubmitting}>
-          <Sparkles size={17} aria-hidden="true" />
-          Try again
-        </Button>
+      <div className="flex min-h-[50vh] items-center justify-center px-4">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-rose-50">
+            <X size={24} className="text-rose-500" aria-hidden="true" />
+          </div>
+          <h3 className="mb-2 text-xl font-bold tracking-tight text-slate-950">Oops, something went wrong</h3>
+          <p className="mb-8 text-sm font-medium text-slate-500">{error}</p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-[#0066B3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0066B3]/90 disabled:opacity-50"
+              onClick={beginQuiz}
+              disabled={isSubmitting}
+              type="button"
+            >
+              <RotateCcw size={16} aria-hidden="true" />
+              Try Again
+            </button>
+            <button
+              className="flex flex-1 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              onClick={onDashboard}
+              type="button"
+            >
+              <Home size={16} aria-hidden="true" />
+              Home
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -318,7 +438,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full bg-gradient-to-r from-blue-500 to-blue-600 shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-500"
+            className="h-full bg-gradient-to-r from-[#0066B3] to-[#0066B3] shadow-[0_0_10px_rgba(0,102,179,0.5)] transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -326,8 +446,8 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
 
       <div className="w-full animate-rise-in">
         <div className="mb-6 flex flex-col items-center justify-center gap-4 md:flex-row md:gap-6">
-          <div className="flex items-center gap-2 rounded-full border border-blue-200 bg-gradient-to-r from-blue-50 to-blue-100 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm">
-            <Layers className="size-4 text-blue-600" aria-hidden="true" />
+          <div className="flex items-center gap-2 rounded-full border border-[#0066B3]/30 bg-gradient-to-r from-[#0066B3]/10 to-[#0066B3]/10 px-4 py-2 text-sm font-semibold text-[#0066B3] shadow-sm">
+            <Layers className="size-4 text-[#0066B3]" aria-hidden="true" />
             Category: {currentQuestion.category}
           </div>
 
@@ -343,7 +463,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                 fill="transparent"
                 strokeDasharray={circumference}
                 strokeDashoffset={circumference - circumference * timerProgress}
-                className="text-blue-600 transition-all duration-1000 ease-linear"
+                className="text-[#0066B3] transition-all duration-1000 ease-linear"
               />
             </svg>
             <span className="absolute text-2xl font-mono font-bold text-slate-900">{formatTime(remaining)}</span>
@@ -373,8 +493,8 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                     : isWrongSelection
                       ? "border-rose-500 bg-rose-50 text-rose-900 shadow-[0_0_20px_rgba(244,63,94,0.14)]"
                       : selected
-                    ? "border-blue-500 bg-blue-50 text-blue-900 shadow-[0_0_20px_rgba(59,130,246,0.18)]"
-                    : "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-blue-500/50 hover:shadow-md"
+                    ? "border-[#0066B3] bg-[#0066B3]/10 text-[#003F6F] shadow-[0_0_20px_rgba(0,102,179,0.18)]"
+                    : "border-slate-200 bg-white text-slate-700 shadow-sm hover:border-[#0066B3]/50 hover:shadow-md"
                 }`}
                 disabled={Boolean(revealedAnswer) || isSubmitting}
                 key={option}
@@ -388,15 +508,15 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                       : isWrongSelection
                         ? "bg-rose-500 text-white"
                         : selected
-                      ? "bg-blue-500 text-white"
-                      : "bg-slate-100 text-slate-500 group-hover:bg-blue-500 group-hover:text-white"
+                      ? "bg-[#0066B3] text-white"
+                      : "bg-slate-100 text-slate-500 group-hover:bg-[#0066B3] group-hover:text-white"
                   }`}
                 >
                   {letter}
                 </span>
                 <span className="text-base font-semibold sm:text-lg md:text-xl">{option}</span>
                 {!selected && !revealedAnswer && (
-                  <span className="absolute right-3 top-3 size-2 rounded-full bg-blue-500 opacity-0 shadow-[0_0_8px_rgba(59,130,246,1)] transition-opacity group-hover:opacity-100" />
+                  <span className="absolute right-3 top-3 size-2 rounded-full bg-[#0066B3] opacity-0 shadow-[0_0_8px_rgba(0,102,179,1)] transition-opacity group-hover:opacity-100" />
                 )}
                 {isCorrectOption && (
                   <span className="absolute right-4 top-4 text-sm font-bold text-emerald-600">Correct</span>
@@ -414,13 +534,13 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
 
         <div className="mt-8 flex justify-center">
           <button
-            className="min-w-[12rem] max-w-[20rem] border border-blue-300 bg-white/90 text-blue-700 flex items-center justify-between gap-3 px-5 py-3 rounded-full transition hover:shadow-md hover:bg-white"
+            className="min-w-[12rem] max-w-[20rem] border border-[#0066B3] bg-white/90 text-[#0066B3] flex items-center justify-between gap-3 px-5 py-3 rounded-full transition hover:shadow-md hover:bg-white"
             disabled={isSubmitting || !revealedAnswer}
             onClick={handleNext}
             type="button"
           >
             <span className="flex-1 text-center text-base font-semibold">{isLastQuestion ? "Submit Score" : "Next Question"}</span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0066B3] text-white">
               <ArrowRight className="size-4" aria-hidden="true" />
             </span>
           </button>

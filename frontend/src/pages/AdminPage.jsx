@@ -17,10 +17,13 @@ import {
 import { useEffect, useState } from "react";
 
 import {
+  adminCreatePrizeCode,
   adminCreateQuestion,
+  adminDeletePrizeCode,
   adminDeleteQuestion,
   adminGetAnalytics,
   adminGetCategories,
+  adminGetPrizeCodes,
   adminGetQuestions,
   adminGetSettings,
   adminGetUsers,
@@ -56,7 +59,15 @@ function AdminPage({ onLogout }) {
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
   const [questions, setQuestions] = useState([]);
-  const [settings, setSettings] = useState({ question_limit: 7, quiz_time_seconds: 150 });
+  const [prizeCodes, setPrizeCodes] = useState([]);
+  const [newPrizeCode, setNewPrizeCode] = useState("");
+  const [settings, setSettings] = useState({
+    question_limit: 7,
+    quiz_time_seconds: 150,
+    attempts_allowed: 3,
+    pass_percentage: 70,
+    prize_code: "",
+  });
   const [form, setForm] = useState(blankQuestion);
   const [editingId, setEditingId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,18 +79,20 @@ function AdminPage({ onLogout }) {
     setIsLoading(true);
     setError("");
     try {
-      const [analyticsData, userData, categoryData, questionData, settingsData] = await Promise.all([
+      const [analyticsData, userData, categoryData, questionData, settingsData, prizeCodeData] = await Promise.all([
         adminGetAnalytics(user),
         adminGetUsers(user),
         adminGetCategories(user),
         adminGetQuestions(user),
         adminGetSettings(user),
+        adminGetPrizeCodes(user),
       ]);
       setAnalytics(analyticsData);
       setUsers(userData);
       setCategories(categoryData);
       setQuestions(questionData);
       setSettings(settingsData);
+      setPrizeCodes(prizeCodeData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -127,6 +140,9 @@ function AdminPage({ onLogout }) {
     setMessage("");
     const questionLimit = Number(settings.question_limit);
     const quizTimeSeconds = Number(settings.quiz_time_seconds);
+    const attemptsAllowed = Number(settings.attempts_allowed);
+    const passPercentage = Number(settings.pass_percentage);
+    const prizeCode = String(settings.prize_code ?? "").trim();
 
     if (!Number.isInteger(questionLimit) || questionLimit < 1 || questionLimit > 50) {
       setError("Questions per quiz must be a whole number from 1 to 50.");
@@ -138,13 +154,56 @@ function AdminPage({ onLogout }) {
       return;
     }
 
+    if (!Number.isInteger(attemptsAllowed) || attemptsAllowed < 1 || attemptsAllowed > 10) {
+      setError("Attempts allowed must be a whole number from 1 to 10.");
+      return;
+    }
+
+    if (!Number.isInteger(passPercentage) || passPercentage < 1 || passPercentage > 100) {
+      setError("Pass percentage must be a whole number from 1 to 100.");
+      return;
+    }
+
     try {
       const updated = await adminUpdateSettings(user, {
         question_limit: questionLimit,
         quiz_time_seconds: quizTimeSeconds,
+        attempts_allowed: attemptsAllowed,
+        pass_percentage: passPercentage,
+        prize_code: prizeCode,
       });
       setSettings(updated);
       setMessage("Quiz settings saved.");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function addPrizeCode(event) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    const code = newPrizeCode.trim().toUpperCase();
+    if (!code) {
+      setError("Enter a prize code before adding it.");
+      return;
+    }
+
+    try {
+      const created = await adminCreatePrizeCode(user, { code });
+      setPrizeCodes((current) => [created, ...current]);
+      setNewPrizeCode("");
+      setMessage("Prize code added.");
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function deletePrizeCode(prizeCodeId) {
+    try {
+      await adminDeletePrizeCode(user, prizeCodeId);
+      setPrizeCodes((current) => current.filter((entry) => entry.id !== prizeCodeId));
+      setMessage("Prize code deleted.");
     } catch (err) {
       setError(err.message);
     }
@@ -215,46 +274,50 @@ function AdminPage({ onLogout }) {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/30 font-sans text-slate-900">
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
-        <header className="mb-8 rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-base font-bold uppercase tracking-wide text-indigo-600/80">Admin Dashboard</p>
-              <h1 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Visal Trivia Control Center</h1>
-              <p className="mt-3 text-base font-medium text-slate-500">Signed in as {user.name}</p>
+    <div className="flex h-screen bg-white font-sans text-slate-950 overflow-hidden">
+      <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
+        <div className="flex h-16 items-center border-b border-slate-100 px-6">
+          <h1 className="text-lg font-bold tracking-tight text-slate-950">
+            place<span className="text-[#0066B3]">IT</span> Admin
+          </h1>
+        </div>
+        <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6">
+          {adminScreens.map((screen) => {
+            const Icon = screen.icon;
+            const isActive = activeScreen === screen.id;
+            return (
+              <button
+                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+                  isActive ? "bg-slate-100 text-slate-950" : "text-slate-500 hover:bg-slate-50 hover:text-slate-950"
+                }`}
+                key={screen.id}
+                onClick={() => setActiveScreen(screen.id)}
+                type="button"
+              >
+                <Icon className={isActive ? "text-slate-950" : "text-slate-400"} size={18} strokeWidth={2} aria-hidden="true" />
+                {screen.label}
+              </button>
+            );
+          })}
+        </nav>
+        <div className="border-t border-slate-100 p-4">
+          <div className="mb-4 flex items-center gap-3 px-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
+              {user.name.charAt(0).toUpperCase()}
             </div>
-            <button
-              className="group inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-slate-100 px-6 text-sm font-semibold text-slate-700 transition-all hover:bg-rose-50 hover:text-rose-600 active:scale-95"
-              onClick={handleLogout}
-              type="button"
-            >
-              <LogOut size={18} strokeWidth={1.5} className="transition-transform group-hover:-translate-x-0.5" aria-hidden="true" />
-              Logout
-            </button>
+            <div className="flex flex-col truncate">
+              <span className="truncate text-sm font-semibold text-slate-950">{user.name}</span>
+              <span className="truncate text-xs text-slate-500">Administrator</span>
+            </div>
           </div>
+          <button className="group flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600" onClick={handleLogout} type="button">
+            <LogOut className="text-slate-400 group-hover:text-rose-600" size={18} aria-hidden="true" />
+            Logout
+          </button>
+        </div>
+      </aside>
 
-          <nav className="mt-8 flex flex-wrap gap-2 sm:gap-3">
-            {adminScreens.map((screen) => {
-              const Icon = screen.icon;
-              const isActive = activeScreen === screen.id;
-              return (
-                <button
-                  className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-6 text-sm font-semibold transition-all duration-200 ${
-                    isActive ? "scale-[1.02] bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md shadow-indigo-200" : "bg-transparent text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
-                  }`}
-                  key={screen.id}
-                  onClick={() => setActiveScreen(screen.id)}
-                  type="button"
-                >
-                  <Icon size={18} strokeWidth={1.5} aria-hidden="true" />
-                  {screen.label}
-                </button>
-              );
-            })}
-          </nav>
-        </header>
-
+      <main className="flex-1 overflow-y-auto bg-white p-8 sm:p-12">
         {(error || message) && (
           <div className="mb-4 grid gap-3">
             {error && <p className="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-600">{error}</p>}
@@ -285,10 +348,19 @@ function AdminPage({ onLogout }) {
           />
         )}
         {activeScreen === "settings" && (
-          <SettingsScreen saveSettings={saveSettings} setSettings={setSettings} settings={settings} />
+          <SettingsScreen
+            addPrizeCode={addPrizeCode}
+            deletePrizeCode={deletePrizeCode}
+            newPrizeCode={newPrizeCode}
+            prizeCodes={prizeCodes}
+            saveSettings={saveSettings}
+            setNewPrizeCode={setNewPrizeCode}
+            setSettings={setSettings}
+            settings={settings}
+          />
         )}
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
 
@@ -302,77 +374,80 @@ function AnalyticsScreen({ analytics }) {
   }, []);
 
   const cards = [
-    { label: "Total Questions", value: analytics?.total_questions ?? 0, icon: ListChecks },
-    { label: "Active Questions", value: analytics?.active_questions ?? 0, icon: CheckCircle2 },
+    { label: "Questions", value: analytics?.total_questions ?? 0, icon: ListChecks },
+    { label: "Active", value: analytics?.active_questions ?? 0, icon: CheckCircle2 },
     { label: "Players", value: analytics?.total_players ?? 0, icon: Users },
-    { label: "User Logins", value: analytics?.total_logins ?? 0, icon: Users },
-    { label: "Completed Sessions", value: analytics?.completed_sessions ?? 0, icon: Activity },
+    { label: "Logins", value: analytics?.total_logins ?? 0, icon: Users },
+    { label: "Completed", value: analytics?.completed_sessions ?? 0, icon: Activity },
   ];
 
   const funnelData = [
-    { label: "Total Logins", value: analytics?.total_logins ?? 0, color: "from-indigo-500 to-purple-500" },
-    { label: "Unique Players", value: analytics?.total_players ?? 0, color: "from-purple-500 to-pink-500" },
-    { label: "Quizzes Finished", value: analytics?.completed_sessions ?? 0, color: "from-pink-500 to-rose-500" },
+    { label: "Total Logins", value: analytics?.total_logins ?? 0, color: "bg-slate-800" },
+    { label: "Unique Players", value: analytics?.total_players ?? 0, color: "bg-[#0066B3]" },
+    { label: "Quizzes Finished", value: analytics?.completed_sessions ?? 0, color: "bg-sky-400" },
   ];
   const maxFunnel = Math.max(...funnelData.map((d) => d.value), 1);
 
   return (
-    <section className="grid gap-6">
-      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <section className="grid gap-8 max-w-6xl mx-auto">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight text-slate-950">Analytics Overview</h2>
+        <p className="mt-2 text-base text-slate-500">Key metrics and performance indicators.</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 sm:grid-cols-3 lg:grid-cols-5">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8" key={card.label}>
-              <div className="mb-6 flex items-center justify-between gap-3">
-                <span className="text-sm font-semibold tracking-tight text-slate-500">{card.label}</span>
-                <span className="flex size-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
-                  <Icon size={24} strokeWidth={1.5} aria-hidden="true" />
-                </span>
+            <div className="bg-white p-6 sm:p-8" key={card.label}>
+              <div className="mb-4 flex items-center gap-2 text-slate-500">
+                <Icon size={16} aria-hidden="true" />
+                <p className="text-xs font-semibold uppercase tracking-widest">{card.label}</p>
               </div>
-              <p className="text-5xl font-bold tracking-tight text-slate-900">{card.value}</p>
+              <p className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{card.value}</p>
             </div>
           );
         })}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <div className="flex flex-col justify-between rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+      <div className="grid gap-px overflow-hidden rounded-xl border border-slate-200 bg-slate-200 lg:grid-cols-3">
+        <div className="bg-white p-6 lg:col-span-2 sm:p-8">
           <div className="mb-8">
-            <h3 className="text-lg font-extrabold tracking-tight text-slate-900">Engagement Funnel</h3>
-            <p className="text-sm font-medium text-slate-500">Player conversion from login to quiz completion</p>
+            <h3 className="text-lg font-bold tracking-tight text-slate-950">Engagement Funnel</h3>
+            <p className="mt-1 text-sm text-slate-500">Player conversion from login to quiz completion</p>
           </div>
-          <div className="flex h-56 items-end justify-around gap-4 sm:gap-8">
+          <div className="flex h-56 items-end justify-around gap-4 pt-6 sm:gap-8">
             {funnelData.map((item) => (
               <div key={item.label} className="group flex h-full w-full flex-col items-center justify-end gap-3">
-                <div className="relative flex w-full max-w-[100px] flex-1 flex-col justify-end rounded-t-xl bg-slate-100/50">
+                <div className="relative flex w-full max-w-[120px] flex-1 flex-col justify-end bg-slate-50">
                   <div
-                    className={`w-full rounded-t-xl bg-gradient-to-t ${item.color} shadow-lg shadow-indigo-200/50 transition-all duration-1000 ease-out`}
+                    className={`w-full ${item.color} transition-all duration-1000 ease-out`}
                     style={{ height: showChart ? `${Math.max((item.value / maxFunnel) * 100, 4)}%` : "0%" }}
                   />
-                  <span className="absolute -top-8 w-full text-center text-sm font-bold text-slate-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <span className="absolute -top-6 w-full text-center text-sm font-bold text-slate-700 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
                     {item.value}
                   </span>
                 </div>
-                <span className="text-center text-xs font-semibold text-slate-500 sm:text-sm">{item.label}</span>
+                <span className="text-center text-xs font-semibold uppercase tracking-widest text-slate-500">{item.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="grid gap-6">
-          <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
-            <p className="text-sm font-semibold tracking-tight text-slate-500">Average Score</p>
-            <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">{analytics?.average_score_percent ?? 0}%</p>
+        <div className="grid gap-px bg-slate-200">
+          <div className="bg-white p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Average Score</p>
+            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{analytics?.average_score_percent ?? 0}%</p>
           </div>
-          <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
-            <p className="text-sm font-semibold tracking-tight text-slate-500">Average Time</p>
-            <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
+          <div className="bg-white p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Average Time</p>
+            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
               {formatTime(analytics?.average_completion_time_seconds ?? 0)}
             </p>
           </div>
-          <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
-            <p className="text-sm font-semibold tracking-tight text-slate-500">Inactive Questions</p>
-            <p className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
+          <div className="bg-white p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Inactive Questions</p>
+            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
               {analytics?.inactive_questions ?? 0}
             </p>
           </div>
@@ -391,83 +466,82 @@ function UsersScreen({ users }) {
   const visibleUsers = users.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <section className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+    <section className="flex h-full flex-col max-w-6xl mx-auto">
       <div className="mb-8">
-        <p className="text-sm font-bold uppercase tracking-wide text-indigo-600/80">User Login List</p>
-        <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">Google sign-ins</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-slate-950">User Logins</h2>
+        <p className="mt-2 text-base text-slate-500">List of users who have signed in via Google.</p>
       </div>
 
-      {users.length === 0 ? (
-        <EmptyState title="No logins yet" message="Google sign-ins will appear here after users log in." />
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="border-b border-slate-200/60 text-xs font-semibold uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="pb-4 pr-4">Name</th>
-                <th className="pb-4 pr-4">Email</th>
-                <th className="pb-4 pr-4">Role</th>
-                <th className="pb-4 pr-4">Login Time</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100/80">
-              {visibleUsers.map((entry) => (
-                <tr key={entry.id} className="transition-colors hover:bg-white/40">
-                  <td className="py-4 pr-4">
-                    <div className="flex items-center gap-4">
-                      {entry.picture ? (
-                        <img alt="" className="size-10 rounded-full object-cover shadow-sm ring-2 ring-white" src={entry.picture} />
-                      ) : (
-                        <span className="flex size-10 items-center justify-center rounded-full bg-indigo-50 text-xs font-bold text-indigo-600 shadow-sm ring-2 ring-white">
-                          {entry.name
-                            .split(" ")
-                            .filter(Boolean)
-                            .slice(0, 2)
-                            .map((part) => part[0]?.toUpperCase())
-                            .join("")}
+      <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+        {users.length === 0 ? (
+          <div className="p-12"><EmptyState title="No logins yet" message="Google sign-ins will appear here after users log in." /></div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full whitespace-nowrap text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">User</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Email</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Role</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Last Login</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {visibleUsers.map((entry) => (
+                    <tr key={entry.id} className="transition-colors hover:bg-slate-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          {entry.picture ? (
+                            <img alt="" className="size-10 rounded-full bg-slate-100 object-cover" src={entry.picture} />
+                          ) : (
+                            <span className="flex size-10 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
+                              {entry.name.charAt(0).toUpperCase()}
+                            </span>
+                          )}
+                          <span className="font-semibold text-slate-950">{entry.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">{entry.email}</td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${entry.role === "admin" ? "bg-slate-950 text-white" : "bg-slate-100 text-slate-700"}`}>
+                          {entry.role}
                         </span>
-                      )}
-                      <span className="font-semibold text-slate-900">{entry.name}</span>
-                    </div>
-                  </td>
-                  <td className="py-4 pr-4 text-slate-600">{entry.email}</td>
-                  <td className="py-4 pr-4">
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold capitalize text-slate-700">
-                      {entry.role}
-                    </span>
-                  </td>
-                  <td className="py-4 pr-4 text-slate-600">{new Date(entry.logged_in_at).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600">{new Date(entry.logged_in_at).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <div className="mt-auto flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <p className="text-sm text-slate-500">
+                  Showing <span className="font-semibold text-slate-950">{startIndex + 1}</span> to <span className="font-semibold text-slate-950">{Math.min(startIndex + itemsPerPage, users.length)}</span> of <span className="font-semibold text-slate-950">{users.length}</span> results
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    type="button"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                    type="button"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
         </div>
-      )}
-      {totalPages > 1 && (
-        <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-slate-200/60 pt-4 sm:flex-row">
-          <p className="text-sm text-slate-500">
-            Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, users.length)} of {users.length} entries
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 active:scale-95 disabled:opacity-50 disabled:hover:bg-slate-100"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-              type="button"
-            >
-              Previous
-            </button>
-            <button
-              className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 active:scale-95 disabled:opacity-50 disabled:hover:bg-slate-100"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-              type="button"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
@@ -508,112 +582,114 @@ function QuestionsScreen({
   }
 
   return (
-    <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-      <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8 h-fit">
-        <div className="mb-8 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-indigo-600/80">Question Editor</p>
-            <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">{editingId ? "Edit question" : "Add question"}</h2>
-          </div>
-          {editingId && (
-            <button onClick={resetForm} type="button" className="group inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 px-6 py-2.5 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 active:scale-95">
-              <X size={18} strokeWidth={1.5} aria-hidden="true" />
-              Cancel
-            </button>
-          )}
+    <section className="flex h-full flex-col gap-10 xl:flex-row max-w-[1400px] mx-auto">
+      <div className="w-full shrink-0 xl:w-[400px]">
+        <div className="mb-6">
+          <h2 className="text-3xl font-bold tracking-tight text-slate-950">{editingId ? "Edit Question" : "Add Question"}</h2>
+          <p className="mt-2 text-base text-slate-500">Create or modify a trivia question.</p>
         </div>
-
-        <form className="grid gap-5" onSubmit={saveQuestion}>
-          <select
-            className="w-full rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-base outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm"
-            onChange={(event) => setForm((current) => ({ ...current, category_id: event.target.value }))}
-            required
-            value={form.category_id}
-          >
-            <option value="" disabled>Select category</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
-
-          <textarea
-            className="min-h-[120px] w-full resize-y rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-base outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm"
-            onChange={(event) => setForm((current) => ({ ...current, prompt: event.target.value }))}
-            placeholder="Question"
-            required
-            value={form.prompt}
-          />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {form.options.map((option, index) => (
-              <input
-                className="w-full rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-base outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm"
-                key={index}
-                onChange={(event) => updateOption(index, event.target.value)}
-                placeholder={`Option ${index + 1}`}
-                required
-                value={option}
-              />
-            ))}
-          </div>
-
-          <input
-            className="w-full rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-base outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm"
-            onChange={(event) => setForm((current) => ({ ...current, correct_answer: event.target.value }))}
-            placeholder="Correct answer"
-            required
-            value={form.correct_answer}
-          />
-
-          <div className="grid gap-5 sm:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
+          <form className="grid gap-5" onSubmit={saveQuestion}>
             <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">Time limit (sec)</label>
-              <input
-                className="w-full rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-base outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm"
-                max="120"
-                min="5"
-                onChange={(event) => setForm((current) => ({ ...current, time_limit_seconds: event.target.value }))}
-                type="number"
-                value={form.time_limit_seconds}
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Category</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                onChange={(event) => setForm((current) => ({ ...current, category_id: event.target.value }))}
+                required
+                value={form.category_id}
+              >
+                <option value="" disabled>Select category</option>
+                {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Prompt</label>
+              <textarea
+                className="min-h-[100px] w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                onChange={(event) => setForm((current) => ({ ...current, prompt: event.target.value }))}
+                placeholder="Question text"
+                required
+                value={form.prompt}
               />
             </div>
-            <label className="flex cursor-pointer items-center gap-3 pt-8 text-sm font-semibold text-slate-700">
+            <div className="grid gap-3 sm:grid-cols-2">
+              {form.options.map((option, index) => (
+                <div key={index}>
+                  <input
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                    onChange={(event) => updateOption(index, event.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                    required
+                    value={option}
+                  />
+                </div>
+              ))}
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Correct Answer</label>
               <input
-                checked={form.is_active}
-                className="size-5 rounded-md border-slate-300 accent-indigo-600"
-                onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.checked }))}
-                type="checkbox"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                onChange={(event) => setForm((current) => ({ ...current, correct_answer: event.target.value }))}
+                placeholder="Must match one option"
+                required
+                value={form.correct_answer}
               />
-              Active
-            </label>
-          </div>
-
-          <button className="group mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] hover:from-indigo-500 hover:to-purple-500 active:scale-95 sm:w-max" type="submit">
-            <Plus size={20} strokeWidth={1.5} aria-hidden="true" />
-            {editingId ? "Save question" : "Add question"}
-          </button>
-        </form>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Time (sec)</label>
+                <input
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                  max="120"
+                  min="5"
+                  onChange={(event) => setForm((current) => ({ ...current, time_limit_seconds: event.target.value }))}
+                  type="number"
+                  value={form.time_limit_seconds}
+                />
+              </div>
+              <div className="flex items-center pt-7">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-slate-700">
+                  <input
+                    checked={form.is_active}
+                    className="size-4 rounded border-slate-300 text-[#0066B3] focus:ring-[#0066B3]"
+                    onChange={(event) => setForm((current) => ({ ...current, is_active: event.target.checked }))}
+                    type="checkbox"
+                  />
+                  Active
+                </label>
+              </div>
+            </div>
+            <div className="mt-4 flex gap-3">
+              <button className="flex-1 rounded-full bg-[#0066B3] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0066B3]" type="submit">
+                {editingId ? "Save" : "Add"}
+              </button>
+              {editingId && (
+                <button onClick={resetForm} className="rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button">
+                  Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
       </div>
 
-      <div className="rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
-        <div className="mb-8 flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-indigo-600/80">Question Bank</p>
-            <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">Manage questions</h2>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950">Question Bank</h2>
+            <p className="mt-2 text-base text-slate-500">Manage all questions.</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/60 transition-all hover:bg-slate-50 active:scale-95"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               onClick={downloadTemplate}
               type="button"
             >
-              <Download size={16} strokeWidth={1.5} aria-hidden="true" />
-              CSV Template
+              <Download size={16} />
+              Template
             </button>
-            <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-indigo-200 transition-all hover:scale-[1.02] hover:from-indigo-500 hover:to-purple-500 active:scale-95">
-              <FileUp size={16} strokeWidth={1.5} aria-hidden="true" />
+            <label className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0066B3] px-6 text-sm font-semibold text-white transition hover:bg-[#0066B3]">
+              <FileUp size={16} />
               {isImporting ? "Importing..." : "Import CSV"}
               <input
                 accept=".csv,text/csv"
@@ -629,105 +705,184 @@ function QuestionsScreen({
           </div>
         </div>
 
-        {questions.length === 0 ? (
-          <EmptyState title="No questions yet" message="Add your first question to start building the quiz." />
-        ) : (
-          <div className="space-y-4">
-            {visibleQuestions.map((question) => (
-              <div className="rounded-2xl border border-slate-200/60 bg-white/60 p-6 transition-all" key={question.id}>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="inline-block rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-indigo-600">
-                      {question.category?.name ?? "Category"}
-                    </p>
-                    <h3 className="mt-3 text-lg font-bold tracking-tight text-slate-900">{question.prompt}</h3>
-                    <p className="mt-2 text-sm font-medium text-slate-500">Answer: {question.correct_answer}</p>
-                  </div>
-                  <div className="flex gap-3 sm:mt-0 mt-4">
-                    <button onClick={() => editQuestion(question)} type="button" className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200/60 transition-all hover:bg-slate-50 active:scale-95">
-                      <Edit3 size={16} strokeWidth={1.5} aria-hidden="true" />
-                      Edit
+        <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+          {questions.length === 0 ? (
+            <div className="p-12"><EmptyState title="No questions yet" message="Add your first question to start building the quiz." /></div>
+          ) : (
+            <>
+              <div className="flex-1 overflow-y-auto p-0">
+                <table className="w-full text-left text-sm">
+                  <thead className="sticky top-0 z-10 border-b border-slate-200 bg-slate-50 text-slate-500">
+                    <tr>
+                      <th className="w-[15%] px-6 py-4 text-xs font-semibold uppercase tracking-widest">Category</th>
+                      <th className="w-[60%] px-6 py-4 text-xs font-semibold uppercase tracking-widest">Prompt</th>
+                      <th className="w-[25%] px-6 py-4 text-right text-xs font-semibold uppercase tracking-widest">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visibleQuestions.map((q) => (
+                      <tr key={q.id} className="group transition-colors hover:bg-slate-50">
+                        <td className="align-top px-6 py-4">
+                          <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800">
+                            {q.category?.name ?? "None"}
+                          </span>
+                        </td>
+                        <td className="align-top px-6 py-5">
+                          <p className="mb-1 text-base font-semibold text-slate-950">{q.prompt}</p>
+                          <p className="text-xs text-slate-500">Answer: {q.correct_answer}</p>
+                        </td>
+                        <td className="align-top px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                            <button onClick={() => editQuestion(q)} className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 hover:text-[#0066B3]" title="Edit" type="button">
+                              <Edit3 size={16} />
+                            </button>
+                            <button onClick={() => deleteQuestion(q.id)} className="rounded-md p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600" title="Delete" type="button">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {totalPages > 1 && (
+                <div className="mt-auto flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+                  <p className="text-sm text-slate-500">
+                    Showing <span className="font-semibold text-slate-950">{startIndex + 1}</span> to <span className="font-semibold text-slate-950">{Math.min(startIndex + itemsPerPage, questions.length)}</span> of <span className="font-semibold text-slate-950">{questions.length}</span> results
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => p - 1)}
+                      type="button"
+                    >
+                      Previous
                     </button>
-                    <button onClick={() => deleteQuestion(question.id)} type="button" className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-600 transition-all hover:bg-rose-100 active:scale-95">
-                      <Trash2 size={16} strokeWidth={1.5} aria-hidden="true" />
-                      Delete
+                    <button
+                      className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                      type="button"
+                    >
+                      Next
                     </button>
                   </div>
                 </div>
-              </div>
-            ))}
-            {totalPages > 1 && (
-              <div className="mt-6 flex flex-col items-center justify-between gap-4 border-t border-slate-200/60 pt-4 sm:flex-row">
-                <p className="text-sm text-slate-500">
-                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, questions.length)} of {questions.length} entries
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 active:scale-95 disabled:opacity-50 disabled:hover:bg-slate-100"
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => p - 1)}
-                    type="button"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-200 active:scale-95 disabled:opacity-50 disabled:hover:bg-slate-100"
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((p) => p + 1)}
-                    type="button"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
     </section>
   );
 }
 
-function SettingsScreen({ saveSettings, setSettings, settings }) {
+function SettingsScreen({ addPrizeCode, deletePrizeCode, newPrizeCode, prizeCodes, saveSettings, setNewPrizeCode, setSettings, settings }) {
   return (
-    <section className="max-w-2xl rounded-3xl border border-slate-200/60 bg-white/70 p-6 backdrop-blur-xl sm:p-8">
+    <section className="max-w-3xl mx-auto">
       <div className="mb-8">
-        <p className="text-sm font-bold uppercase tracking-wide text-indigo-600/80">Settings</p>
-        <h2 className="mt-1 text-3xl font-extrabold tracking-tight text-slate-900">Quiz controls</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-slate-950">Quiz Settings</h2>
+        <p className="mt-2 text-base text-slate-500">Configure global gameplay parameters.</p>
       </div>
 
-      <form className="grid gap-6" onSubmit={saveSettings}>
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">Questions per quiz</label>
-          <input
-            className="w-full rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-base outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm"
-            max="50"
-            min="1"
-            required
-            step="1"
-            onChange={(event) => setSettings((current) => ({ ...current, question_limit: event.target.value }))}
-            type="number"
-            value={settings.question_limit}
-          />
+      <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-10">
+        <div className="space-y-8">
+          <div className="grid gap-8 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Questions per quiz</label>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                max="50" min="1" required step="1"
+                onChange={(event) => setSettings((current) => ({ ...current, question_limit: event.target.value }))}
+                type="number" value={settings.question_limit}
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Quiz time in seconds</label>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                max="3600" min="30" required step="1"
+                onChange={(event) => setSettings((current) => ({ ...current, quiz_time_seconds: event.target.value }))}
+                type="number" value={settings.quiz_time_seconds}
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Attempts allowed</label>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                max="10" min="1" required step="1"
+                onChange={(event) => setSettings((current) => ({ ...current, attempts_allowed: event.target.value }))}
+                type="number" value={settings.attempts_allowed ?? 3}
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Pass percentage (%)</label>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                max="100" min="1" required step="1"
+                onChange={(event) => setSettings((current) => ({ ...current, pass_percentage: event.target.value }))}
+                type="number" value={settings.pass_percentage ?? 70}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Prize code (optional)</label>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:bg-white focus:ring-2 focus:ring-[#0066B3]/15"
+                maxLength="120"
+                onChange={(event) => setSettings((current) => ({ ...current, prize_code: event.target.value }))}
+                placeholder="e.g. WIN-2048" type="text" value={settings.prize_code ?? ""}
+              />
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-950">Prize codes</h3>
+                <p className="text-sm text-slate-500">Add multiple codes and delete used ones. Existing codes cannot be edited.</p>
+              </div>
+            </div>
+            <form className="mb-6 flex gap-3" onSubmit={addPrizeCode}>
+              <input
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0066B3] focus:ring-2 focus:ring-[#0066B3]/15"
+                onChange={(event) => setNewPrizeCode(event.target.value)}
+                placeholder="e.g. WIN-2048"
+                type="text"
+                value={newPrizeCode}
+              />
+              <button className="rounded-full bg-[#0066B3] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0066B3]" type="submit">Add</button>
+            </form>
+            <div className="grid gap-3">
+              {prizeCodes.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-center text-sm text-slate-500">No prize codes yet.</p>
+              ) : prizeCodes.map((item) => (
+                <div key={item.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4">
+                  <div>
+                    <p className="text-sm font-bold text-slate-950">{item.code}</p>
+                    <p className="text-xs text-slate-500">{item.is_used ? `Claimed by ${item.claimed_by || "a player"}` : "Available to award"}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${item.is_used ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>
+                      {item.is_used ? "✓ Used" : "Unused"}
+                    </span>
+                    <button className="rounded-md p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => deletePrizeCode(item.id)} type="button" title="Delete code">
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end border-t border-slate-200 pt-8">
+            <button className="inline-flex items-center justify-center gap-2 rounded-full bg-[#0066B3] px-8 py-3 text-sm font-semibold text-white transition hover:bg-[#0066B3]" onClick={saveSettings} type="button">
+              <Save size={16} aria-hidden="true" />
+              Save Settings
+            </button>
+          </div>
         </div>
-        <div>
-          <label className="mb-2 block text-sm font-semibold text-slate-700">Quiz time in seconds</label>
-          <input
-            className="w-full rounded-xl border border-slate-200/60 bg-white/50 px-4 py-3 text-base outline-none transition-all focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 backdrop-blur-sm"
-            max="3600"
-            min="30"
-            required
-            step="1"
-            onChange={(event) => setSettings((current) => ({ ...current, quiz_time_seconds: event.target.value }))}
-            type="number"
-            value={settings.quiz_time_seconds}
-          />
-        </div>
-        <button className="group mt-4 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-4 text-base font-semibold text-white shadow-lg shadow-indigo-200 transition-all hover:scale-[1.02] hover:from-indigo-500 hover:to-purple-500 active:scale-95 sm:w-max" type="submit">
-          <Save size={20} strokeWidth={1.5} aria-hidden="true" />
-          Save settings
-        </button>
-      </form>
+      </div>
     </section>
   );
 }

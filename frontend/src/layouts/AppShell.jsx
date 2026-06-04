@@ -26,7 +26,7 @@ function AppShell({ tabs, activeTab, onGoHome, onTabChange, children }) {
         <header className="mb-5 bg-white/60 backdrop-blur-md rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-500 to-blue-600 text-white shadow">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-[#0066B3] to-[#0066B3] text-white shadow">
                 <Trophy size={20} aria-hidden="true" />
               </span>
               <div>
@@ -70,7 +70,7 @@ function AppShell({ tabs, activeTab, onGoHome, onTabChange, children }) {
                 <button
                   key={tab.id}
                   className={`inline-flex min-h-10 items-center justify-center gap-2 rounded-full px-4 text-sm font-semibold transition ${
-                    isActive ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow" : "text-zinc-700 hover:bg-slate-100"
+                    isActive ? "bg-gradient-to-r from-[#0066B3] to-[#0066B3] text-white shadow" : "text-zinc-700 hover:bg-slate-100"
                   }`}
                   onClick={() => onTabChange(tab.id)}
                   type="button"

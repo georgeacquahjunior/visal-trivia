@@ -182,3 +182,33 @@ export function adminUpdateSettings(user, payload) {
     }),
   );
 }
+
+export function adminGetPrizeCodes(user) {
+  return request("/api/admin/prize-codes", adminOptions(user));
+}
+
+export function adminCreatePrizeCode(user, payload) {
+  return request(
+    "/api/admin/prize-codes",
+    adminOptions(user, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  );
+}
+
+export function adminDeletePrizeCode(user, prizeCodeId) {
+  return request(
+    `/api/admin/prize-codes/${prizeCodeId}`,
+    adminOptions(user, {
+      method: "DELETE",
+    }),
+  );
+}
+
+export function claimPrizeCode(payload) {
+  return request("/api/quiz/claim-prize", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
