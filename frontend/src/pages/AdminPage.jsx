@@ -8,6 +8,7 @@ import {
   ListChecks,
   LogOut,
   Plus,
+  RefreshCw,
   Save,
   Settings,
   Trash2,
@@ -283,6 +284,28 @@ function AdminPage({ onLogout }) {
     return <LoadingState label="Loading admin dashboard" />;
   }
 
+  if (!analytics && error) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-white p-6 text-center font-sans">
+        <div className="mb-4 flex size-16 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+          <X size={32} />
+        </div>
+        <h2 className="mb-2 text-2xl font-bold tracking-tight text-slate-950">Authentication Error</h2>
+        <p className="mb-8 max-w-md text-sm font-medium text-slate-500">
+          {error}. Your session may have expired or you might not have admin privileges. Please log out and sign in again.
+        </p>
+        <button
+          onClick={handleLogout}
+          className="inline-flex items-center gap-2 rounded-full bg-[#0066B3] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0066B3]/90"
+          type="button"
+        >
+          <LogOut size={18} />
+          Logout and Sign In Again
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen flex-col bg-white font-sans text-slate-950 overflow-hidden md:flex-row">
       <aside className="flex w-full shrink-0 flex-col border-b border-slate-200 bg-white md:w-64 md:border-b-0 md:border-r">
@@ -335,7 +358,7 @@ function AdminPage({ onLogout }) {
         {activeScreen === "analytics" && (
           <AnalyticsScreen analytics={analytics} />
         )}
-        {activeScreen === "users" && <UsersScreen users={users} />}
+        {activeScreen === "users" && <UsersScreen users={users} onRefresh={loadAdminData} />}
         {activeScreen === "questions" && (
           <QuestionsScreen
             categories={categories}
@@ -491,7 +514,7 @@ function AnalyticsScreen({ analytics }) {
   );
 }
 
-function UsersScreen({ users }) {
+function UsersScreen({ users, onRefresh }) {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(users.length / itemsPerPage);
@@ -501,9 +524,19 @@ function UsersScreen({ users }) {
 
   return (
     <section className="flex h-full flex-col max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">User Logins</h2>
-        <p className="mt-2 text-base text-slate-500">List of users who have signed in via Google.</p>
+      <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">User Logins</h2>
+          <p className="mt-2 text-base text-slate-500">List of users who have signed in via Google.</p>
+        </div>
+        <button
+          onClick={onRefresh}
+          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 sm:w-auto"
+          type="button"
+        >
+          <RefreshCw size={16} className="transition-transform group-active:rotate-180" aria-hidden="true" />
+          Refresh
+        </button>
       </div>
 
       <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">

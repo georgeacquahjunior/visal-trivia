@@ -45,6 +45,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
   const [error, setError] = useState("");
   const resultSavedRef = useRef(false);
   const autoStartRef = useRef(false);
+  const [hasClosedWinnerModal, setHasClosedWinnerModal] = useState(false);
 
   useEffect(() => {
     if (!result || !user?.id || resultSavedRef.current) {
@@ -139,6 +140,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     setResult(null);
     setAnswerResults(null);
     setRevealedAnswer(null);
+    setHasClosedWinnerModal(false);
     setAnswers({});
     try {
       const settings = await getQuizSettings();
@@ -220,6 +222,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     setRemaining(quizSettings.quiz_time_seconds);
     setAnswerResults(null);
     setRevealedAnswer(null);
+    setHasClosedWinnerModal(false);
     resultSavedRef.current = false;
     autoStartRef.current = false;
   }
@@ -231,6 +234,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
   if (result) {
     const percentage = Math.round((result.score / result.total_questions) * 100);
     const isWinner = percentage >= (quizSettings?.pass_percentage ?? 70);
+    const showWinnerModal = isWinner && !hasClosedWinnerModal;
     return (
       <div className="flex min-h-[calc(100vh-150px)] items-center justify-center p-4 bg-white">
         <div className="glass-card relative w-full max-w-lg overflow-hidden p-8 text-center">
@@ -263,6 +267,34 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
             {isWinner && (
               <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm font-semibold text-emerald-800 shadow-sm">
                 Congratulations! Visit our booth on the 3rd floor for your voucher.
+              </div>
+            )}
+
+            {showWinnerModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-opacity">
+                <div className="animate-rise-in relative w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl">
+                  <button 
+                    onClick={() => setHasClosedWinnerModal(true)}
+                    className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                    type="button"
+                  >
+                    <X size={20} aria-hidden="true" />
+                  </button>
+                  <div className="mx-auto mb-6 flex size-20 items-center justify-center rounded-full bg-emerald-100">
+                    <Sparkles className="size-10 text-emerald-500" aria-hidden="true" />
+                  </div>
+                  <h3 className="mb-3 text-2xl font-bold tracking-tight text-slate-900">Congratulations!</h3>
+                  <p className="mb-8 text-base font-medium text-slate-600">
+                    You passed the mark! Visit our booth on the 3rd floor for your voucher.
+                  </p>
+                  <button
+                    onClick={() => setHasClosedWinnerModal(true)}
+                    className="w-full rounded-full bg-[#0066B3] px-6 py-3 text-base font-semibold text-white transition hover:bg-[#0066B3]/90"
+                    type="button"
+                  >
+                    Awesome, thanks!
+                  </button>
+                </div>
               </div>
             )}
 
