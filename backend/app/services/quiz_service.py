@@ -5,15 +5,58 @@ from fastapi import HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Player, Question, QuizSession, Score
+from app.models import Player, PrizeCode, Question, QuizSession, QuizSetting, Score
 from app.schemas.question import QuizQuestion
 from app.schemas.quiz import AnswerResult
 
 
+def get_or_create_quiz_settings(db: Session) -> QuizSetting:
+    settings_row = db.get(QuizSetting, 1)
+    if settings_row is None:
+        settings_row = QuizSetting(
+            id=1,
+            question_limit=7,
+            quiz_time_seconds=150,
+            attempts_allowed=3,
+            pass_percentage=70,
+            prize_code="",
+        )
+        db.add(settings_row)
+        db.commit()
+        db.refresh(settings_row)
+    return settings_row
+
+
 def start_quiz(db: Session, player_name: str, category_id: int | None, limit: int) -> tuple[QuizSession, list[QuizQuestion]]:
-    player = Player(name=player_name.strip())
-    db.add(player)
-    db.flush()
+    clean_name = player_name.strip()
+    if not clean_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Player name is required")
+
+    player = db.scalar(select(Player).where(Player.name == clean_name).order_by(Player.created_at.desc()))
+    if player is None:
+        player = Player(name=clean_name)
+        db.add(player)
+        db.flush()
+
+    claimed_prize_code = db.scalar(
+        select(PrizeCode.id).where(
+            PrizeCode.is_used.is_(True),
+            func.lower(PrizeCode.claimed_by) == clean_name.lower(),
+        )
+    )
+    if claimed_prize_code is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have already claimed a prize code, so you cannot take another quiz.",
+        )
+
+    settings_row = get_or_create_quiz_settings(db)
+    attempts_used = db.scalar(select(func.count(Score.id)).join(QuizSession, Score.session_id == QuizSession.id).where(QuizSession.player_id == player.id)) or 0
+    if attempts_used >= settings_row.attempts_allowed:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have reached the maximum number of quiz attempts allowed by the admin.",
+        )
 
     statement = select(Question).options(joinedload(Question.category)).where(Question.is_active.is_(True))
     if category_id:

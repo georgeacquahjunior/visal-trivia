@@ -58,7 +58,16 @@ def seed() -> None:
                 )
             )
         if db.get(QuizSetting, 1) is None:
-            db.add(QuizSetting(id=1, question_limit=7, quiz_time_seconds=150))
+            db.add(
+                QuizSetting(
+                    id=1,
+                    question_limit=7,
+                    quiz_time_seconds=150,
+                    attempts_allowed=3,
+                    pass_percentage=70,
+                    prize_code="",
+                )
+            )
         db.commit()
     finally:
         db.close()

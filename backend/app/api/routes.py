@@ -12,11 +12,12 @@ from uuid import uuid4
 from app.api.deps import get_db
 from app.core.config import settings
 from app.core.security import require_google_admin
-from app.models import Category, Player, Question, QuizSession, QuizSetting, Score, UserLogin
+from app.models import Category, Player, PrizeCode, Question, QuizSession, QuizSetting, Score, UserLogin
 from app.schemas.admin import AdminAnalytics, AdminQuestionImportResult, AdminUserLogin
 from app.schemas.auth import AuthUser, GoogleAuthRequest, GoogleAuthResponse, NameAuthRequest
 from app.schemas.category import CategoryCreate, CategoryRead, CategoryUpdate
 from app.schemas.question import QuestionCreate, QuestionRead, QuestionUpdate
+from app.schemas.prize_code import PrizeCodeClaimRequest, PrizeCodeCreate, PrizeCodeRead
 from app.schemas.quiz import (
     AnswerCheckRequest,
     AnswerCheckResponse,
@@ -114,7 +115,14 @@ def list_categories(db: Session = Depends(get_db)) -> list[Category]:
 def get_or_create_quiz_settings(db: Session) -> QuizSetting:
     settings_row = db.get(QuizSetting, 1)
     if settings_row is None:
-        settings_row = QuizSetting(id=1, question_limit=7, quiz_time_seconds=150)
+        settings_row = QuizSetting(
+            id=1,
+            question_limit=7,
+            quiz_time_seconds=150,
+            attempts_allowed=3,
+            pass_percentage=70,
+            prize_code="",
+        )
         db.add(settings_row)
         db.commit()
         db.refresh(settings_row)
@@ -411,11 +419,75 @@ def admin_get_settings(db: Session = Depends(get_db)) -> QuizSetting:
     return get_or_create_quiz_settings(db)
 
 
+@router.get("/admin/prize-codes", response_model=list[PrizeCodeRead], tags=["admin"], dependencies=[Depends(require_google_admin)])
+def admin_list_prize_codes(db: Session = Depends(get_db)) -> list[PrizeCode]:
+    return list(db.scalars(select(PrizeCode).order_by(PrizeCode.is_used.asc(), PrizeCode.created_at.desc())))
+
+
+@router.post("/admin/prize-codes", response_model=PrizeCodeRead, status_code=status.HTTP_201_CREATED, tags=["admin"], dependencies=[Depends(require_google_admin)])
+def admin_create_prize_code(payload: PrizeCodeCreate, db: Session = Depends(get_db)) -> PrizeCode:
+    code = payload.code.strip().upper()
+    if not code:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Prize code is required")
+
+    existing = db.scalar(select(PrizeCode).where(PrizeCode.code == code))
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="That prize code already exists")
+
+    prize_code = PrizeCode(code=code)
+    db.add(prize_code)
+    db.commit()
+    db.refresh(prize_code)
+    return prize_code
+
+
+@router.delete("/admin/prize-codes/{prize_code_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["admin"], dependencies=[Depends(require_google_admin)])
+def admin_delete_prize_code(prize_code_id: int, db: Session = Depends(get_db)) -> None:
+    prize_code = db.get(PrizeCode, prize_code_id)
+    if prize_code is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Prize code not found")
+    db.delete(prize_code)
+    db.commit()
+
+
+@router.post("/quiz/claim-prize", response_model=PrizeCodeRead, tags=["quiz"])
+def claim_prize_code(payload: PrizeCodeClaimRequest, db: Session = Depends(get_db)) -> PrizeCode:
+    player_name = payload.player_name.strip()
+    if not player_name:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Player name is required")
+
+    existing_claim = db.scalar(
+        select(PrizeCode).where(
+            PrizeCode.is_used.is_(True),
+            func.lower(PrizeCode.claimed_by) == player_name.lower(),
+        )
+    )
+    if existing_claim is not None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You have already claimed a prize code.",
+        )
+
+    prize_code = db.scalar(select(PrizeCode).where(PrizeCode.is_used.is_(False)).order_by(PrizeCode.created_at.asc()))
+    if prize_code is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No unused prize codes are available")
+
+    prize_code.is_used = True
+    prize_code.claimed_by = player_name
+    prize_code.claimed_at = func.now()
+    db.commit()
+    db.refresh(prize_code)
+    return prize_code
+
+
 @router.put("/admin/settings", response_model=QuizSettingRead, tags=["admin"], dependencies=[Depends(require_google_admin)])
 def admin_update_settings(payload: QuizSettingUpdate, db: Session = Depends(get_db)) -> QuizSetting:
     settings_row = get_or_create_quiz_settings(db)
     settings_row.question_limit = payload.question_limit
     settings_row.quiz_time_seconds = payload.quiz_time_seconds
+    settings_row.attempts_allowed = payload.attempts_allowed
+    settings_row.pass_percentage = payload.pass_percentage
+    settings_row.prize_code = payload.prize_code.strip()
     db.commit()
     db.refresh(settings_row)
     return settings_row
