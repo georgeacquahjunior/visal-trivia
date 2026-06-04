@@ -305,6 +305,11 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     ctx.font = "16px sans-serif";
     ctx.fillText("Visit our booth on the 3rd floor for your voucher.", canvas.width / 2, 210);
 
+    // Date
+    ctx.fillStyle = "#cbd5e1";
+    ctx.font = "14px sans-serif";
+    ctx.fillText(`Date: ${new Date().toLocaleDateString()}`, canvas.width / 2, 235);
+
     const url = canvas.toDataURL("image/png");
     const link = document.createElement("a");
     link.href = url;
@@ -397,7 +402,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-[#0066B3] center ">Prize Unlocked</p>
-                  <h2 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 center ">Copy your code now</h2>
+                  <h2 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 center ">Congratulations!🥳</h2>
                 </div>
                 <button
                   className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
@@ -409,7 +414,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                 </button>
               </div>
               <p className="mb-4 text-sm text-slate-600">
-                <strong className="mb-2 block text-base text-slate-900">Congratulations! Visit our booth on the 3rd floor for your voucher.</strong>
+                <strong className="mb-2 block text-base text-slate-900">Visit our booth on the 3rd floor for your voucher.</strong>
                 This code cannot be returned to after this window is closed. Please copy it or take a screenshot.
               </p>
               <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
