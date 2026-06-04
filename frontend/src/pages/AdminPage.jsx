@@ -274,20 +274,23 @@ function AdminPage({ onLogout }) {
   }
 
   return (
-    <div className="flex h-screen bg-white font-sans text-slate-950 overflow-hidden">
-      <aside className="flex w-64 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="flex h-16 items-center border-b border-slate-100 px-6">
+    <div className="flex h-screen flex-col bg-white font-sans text-slate-950 overflow-hidden md:flex-row">
+      <aside className="flex w-full shrink-0 flex-col border-b border-slate-200 bg-white md:w-64 md:border-b-0 md:border-r">
+        <div className="flex h-16 shrink-0 items-center justify-between border-b border-slate-100 px-4 sm:px-6">
           <h1 className="text-lg font-bold tracking-tight text-slate-950">
             place<span className="text-[#0066B3]">IT</span> Admin
           </h1>
+          <button className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600 md:hidden" onClick={handleLogout} type="button" aria-label="Logout">
+            <LogOut size={20} aria-hidden="true" />
+          </button>
         </div>
-        <nav className="flex-1 space-y-2 overflow-y-auto px-4 py-6">
+        <nav className="flex space-x-2 overflow-x-auto px-4 py-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:flex-1 md:flex-col md:space-x-0 md:space-y-2 md:overflow-y-auto md:py-6">
           {adminScreens.map((screen) => {
             const Icon = screen.icon;
             const isActive = activeScreen === screen.id;
             return (
               <button
-                className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition-colors ${
+                className={`flex shrink-0 items-center gap-2.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors md:w-full md:py-3 ${
                   isActive ? "bg-slate-100 text-slate-950" : "text-slate-500 hover:bg-slate-50 hover:text-slate-950"
                 }`}
                 key={screen.id}
@@ -300,7 +303,7 @@ function AdminPage({ onLogout }) {
             );
           })}
         </nav>
-        <div className="border-t border-slate-100 p-4">
+        <div className="hidden border-t border-slate-100 p-4 md:block">
           <div className="mb-4 flex items-center gap-3 px-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
               {user.name.charAt(0).toUpperCase()}
@@ -317,7 +320,7 @@ function AdminPage({ onLogout }) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-white p-8 sm:p-12">
+      <main className="flex-1 overflow-y-auto bg-white p-4 sm:p-6 md:p-8 lg:p-12">
         {(error || message) && (
           <div className="mb-4 grid gap-3">
             {error && <p className="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-600">{error}</p>}
@@ -391,7 +394,7 @@ function AnalyticsScreen({ analytics }) {
   return (
     <section className="grid gap-8 max-w-6xl mx-auto">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-slate-950">Analytics Overview</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Analytics Overview</h2>
         <p className="mt-2 text-base text-slate-500">Key metrics and performance indicators.</p>
       </div>
 
@@ -399,12 +402,12 @@ function AnalyticsScreen({ analytics }) {
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <div className="bg-white p-6 sm:p-8" key={card.label}>
+            <div className="bg-white p-4 sm:p-6 lg:p-8" key={card.label}>
               <div className="mb-4 flex items-center gap-2 text-slate-500">
                 <Icon size={16} aria-hidden="true" />
                 <p className="text-xs font-semibold uppercase tracking-widest">{card.label}</p>
               </div>
-              <p className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{card.value}</p>
+              <p className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">{card.value}</p>
             </div>
           );
         })}
@@ -435,19 +438,19 @@ function AnalyticsScreen({ analytics }) {
         </div>
 
         <div className="grid gap-px bg-slate-200">
-          <div className="bg-white p-6 sm:p-8">
+          <div className="bg-white p-4 sm:p-6 lg:p-8">
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Average Score</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{analytics?.average_score_percent ?? 0}%</p>
+            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">{analytics?.average_score_percent ?? 0}%</p>
           </div>
-          <div className="bg-white p-6 sm:p-8">
+          <div className="bg-white p-4 sm:p-6 lg:p-8">
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Average Time</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
               {formatTime(analytics?.average_completion_time_seconds ?? 0)}
             </p>
           </div>
-          <div className="bg-white p-6 sm:p-8">
+          <div className="bg-white p-4 sm:p-6 lg:p-8">
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">Inactive Questions</p>
-            <p className="mt-2 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+            <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl lg:text-4xl">
               {analytics?.inactive_questions ?? 0}
             </p>
           </div>
@@ -468,7 +471,7 @@ function UsersScreen({ users }) {
   return (
     <section className="flex h-full flex-col max-w-6xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-950">User Logins</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">User Logins</h2>
         <p className="mt-2 text-base text-slate-500">List of users who have signed in via Google.</p>
       </div>
 
@@ -515,7 +518,7 @@ function UsersScreen({ users }) {
               </table>
             </div>
             {totalPages > 1 && (
-              <div className="mt-auto flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+              <div className="mt-auto flex flex-col items-center justify-between gap-4 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:px-6">
                 <p className="text-sm text-slate-500">
                   Showing <span className="font-semibold text-slate-950">{startIndex + 1}</span> to <span className="font-semibold text-slate-950">{Math.min(startIndex + itemsPerPage, users.length)}</span> of <span className="font-semibold text-slate-950">{users.length}</span> results
                 </p>
@@ -585,10 +588,10 @@ function QuestionsScreen({
     <section className="flex h-full flex-col gap-10 xl:flex-row max-w-[1400px] mx-auto">
       <div className="w-full shrink-0 xl:w-[400px]">
         <div className="mb-6">
-          <h2 className="text-3xl font-bold tracking-tight text-slate-950">{editingId ? "Edit Question" : "Add Question"}</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{editingId ? "Edit Question" : "Add Question"}</h2>
           <p className="mt-2 text-base text-slate-500">Create or modify a trivia question.</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 lg:p-8">
           <form className="grid gap-5" onSubmit={saveQuestion}>
             <div>
               <label className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-500">Category</label>
@@ -676,7 +679,7 @@ function QuestionsScreen({
       <div className="flex flex-1 flex-col overflow-hidden">
         <div className="mb-6 flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight text-slate-950">Question Bank</h2>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Question Bank</h2>
             <p className="mt-2 text-base text-slate-500">Manage all questions.</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -747,7 +750,7 @@ function QuestionsScreen({
                 </table>
               </div>
               {totalPages > 1 && (
-                <div className="mt-auto flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+                <div className="mt-auto flex flex-col items-center justify-between gap-4 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:px-6">
                   <p className="text-sm text-slate-500">
                     Showing <span className="font-semibold text-slate-950">{startIndex + 1}</span> to <span className="font-semibold text-slate-950">{Math.min(startIndex + itemsPerPage, questions.length)}</span> of <span className="font-semibold text-slate-950">{questions.length}</span> results
                   </p>
@@ -783,11 +786,11 @@ function SettingsScreen({ addPrizeCode, deletePrizeCode, newPrizeCode, prizeCode
   return (
     <section className="max-w-3xl mx-auto">
       <div className="mb-8">
-        <h2 className="text-3xl font-bold tracking-tight text-slate-950">Quiz Settings</h2>
+        <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Quiz Settings</h2>
         <p className="mt-2 text-base text-slate-500">Configure global gameplay parameters.</p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 sm:p-10">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 md:p-10">
         <div className="space-y-8">
           <div className="grid gap-8 sm:grid-cols-2">
             <div>
@@ -836,7 +839,7 @@ function SettingsScreen({ addPrizeCode, deletePrizeCode, newPrizeCode, prizeCode
               />
             </div>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-6 md:p-8">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-base font-bold text-slate-950">Prize codes</h3>
@@ -857,7 +860,7 @@ function SettingsScreen({ addPrizeCode, deletePrizeCode, newPrizeCode, prizeCode
               {prizeCodes.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-center text-sm text-slate-500">No prize codes yet.</p>
               ) : prizeCodes.map((item) => (
-                <div key={item.id} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4">
+                <div key={item.id} className="flex flex-col items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center">
                   <div>
                     <p className="text-sm font-bold text-slate-950">{item.code}</p>
                     <p className="text-xs text-slate-500">{item.is_used ? `Claimed by ${item.claimed_by || "a player"}` : "Available to award"}</p>

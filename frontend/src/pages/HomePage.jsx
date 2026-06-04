@@ -112,10 +112,10 @@ function HomePage({
   return (
     <main className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white px-6 py-4 sm:px-8">
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white px-4 py-4 sm:px-8">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0066B3] text-white">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#0066B3] text-white">
               <Layers size={24} strokeWidth={1.8} />
             </div>
             <div>
@@ -137,7 +137,7 @@ function HomePage({
       </header>
 
       {/* Main Content */}
-      <div className="mx-auto max-w-5xl px-6 py-12 sm:px-8 sm:py-20">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-8 sm:py-20">
         {/* Welcome Section */}
         <div className="flex flex-col items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
@@ -187,9 +187,9 @@ function HomePage({
         </div>
 
         {/* Stats Grid */}
-        <div className="my-16 grid grid-cols-2 gap-px border-y border-slate-200 bg-slate-200 sm:grid-cols-4">
+        <div className="my-12 grid grid-cols-1 gap-px border-y border-slate-200 bg-slate-200 sm:my-16 sm:grid-cols-2 lg:grid-cols-4">
           {/* Highest Score */}
-          <div className="bg-white p-6 sm:p-8">
+          <div className="bg-white p-5 sm:p-8">
             <div className="mb-4 flex items-center gap-2 text-slate-500">
               <Trophy size={16} />
               <p className="text-xs font-semibold uppercase tracking-widest">Highest Score</p>
@@ -199,7 +199,7 @@ function HomePage({
           </div>
 
           {/* Average Accuracy */}
-          <div className="bg-white p-6 sm:p-8">
+          <div className="bg-white p-5 sm:p-8">
             <div className="mb-4 flex items-center gap-2 text-slate-500">
               <TrendingUp size={16} />
               <p className="text-xs font-semibold uppercase tracking-widest">Avg Accuracy</p>
@@ -209,7 +209,7 @@ function HomePage({
           </div>
 
           {/* Current Rank */}
-          <div className="bg-white p-6 sm:p-8">
+          <div className="bg-white p-5 sm:p-8">
             <div className="mb-4 flex items-center gap-2 text-slate-500">
               <Award size={16} />
               <p className="text-xs font-semibold uppercase tracking-widest">Global Rank</p>
@@ -219,7 +219,7 @@ function HomePage({
           </div>
 
           {/* Avg Time */}
-          <div className="bg-white p-6 sm:p-8">
+          <div className="bg-white p-5 sm:p-8">
             <div className="mb-4 flex items-center gap-2 text-slate-500">
               <Zap size={16} />
               <p className="text-xs font-semibold uppercase tracking-widest">Avg Time</p>
@@ -240,7 +240,7 @@ function HomePage({
                   className="flex flex-col gap-4 border-b border-slate-200 py-5 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-center gap-5">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-50 font-bold text-slate-900">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-slate-50 font-bold text-slate-900">
                       {result.percentage}%
                     </div>
                     <div>

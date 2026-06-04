@@ -45,7 +45,7 @@ function LeaderboardPage() {
         </div>
         <button
           onClick={loadLeaderboard}
-          className="group inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200"
+          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 sm:w-auto"
           type="button"
         >
           <RefreshCw size={16} className="transition-transform group-active:rotate-180" aria-hidden="true" />
@@ -56,7 +56,7 @@ function LeaderboardPage() {
       {error && <p className="mb-6 rounded-xl bg-red-50 p-4 text-sm font-medium text-red-600">{error}</p>}
 
       {entries.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12">
+        <div className="rounded-xl border border-slate-200 bg-white p-8 sm:p-12">
           <EmptyState title="No scores yet" message="Play the first quiz to start the leaderboard." />
         </div>
       ) : (
@@ -110,7 +110,7 @@ function LeaderboardPage() {
               </table>
             </div>
             {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-4">
+              <div className="flex flex-col items-center justify-between gap-4 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:px-6">
                 <p className="text-sm text-slate-500">
                   Showing <span className="font-semibold text-slate-950">{startIndex + 1}</span> to <span className="font-semibold text-slate-950">{Math.min(startIndex + itemsPerPage, entries.length)}</span> of <span className="font-semibold text-slate-950">{entries.length}</span> results
                 </p>
