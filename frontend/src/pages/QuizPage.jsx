@@ -1,4 +1,4 @@
-import { ArrowRight, Clock, Copy, Home, Layers, RotateCcw, Sparkles, Target, Trophy, X, Zap } from "lucide-react";
+import { ArrowRight, Clock, Copy, Download, Home, Layers, RotateCcw, Sparkles, Target, Trophy, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { checkAnswer, claimPrizeCode, getQuizSettings, startQuiz, submitQuiz } from "../api/client.js";
@@ -272,6 +272,48 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     }
   }
 
+  function downloadPrizeCodeImage() {
+    if (!prizeCode) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 500;
+    canvas.height = 250;
+    const ctx = canvas.getContext("2d");
+
+    // Background
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Border
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 8;
+    ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+    // Title
+    ctx.fillStyle = "#64748b";
+    ctx.font = "bold 22px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Visal Trivia Prize", canvas.width / 2, 70);
+
+    // Code
+    ctx.fillStyle = "#0066B3";
+    ctx.font = "bold 56px monospace";
+    ctx.fillText(prizeCode, canvas.width / 2, 140);
+
+    // Footer
+    ctx.fillStyle = "#94a3b8";
+    ctx.font = "16px sans-serif";
+    ctx.fillText("Present this code to claim your prize.", canvas.width / 2, 210);
+
+    const url = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `prize-code-${prizeCode}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
   function closePrizeModal() {
     setIsPrizeModalOpen(false);
     setCopyMessage("");
@@ -354,8 +396,8 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
             <div className="w-full max-w-md rounded-2xl bg-white p-6 text-left shadow-2xl">
               <div className="mb-5 flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-[#0066B3]">Prize Unlocked</p>
-                  <h2 className="mt-2 text-2xl font-bold tracking-normal text-slate-950">Copy your code now</h2>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-[#0066B3] center ">Prize Unlocked</p>
+                  <h2 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 center ">Copy your code now</h2>
                 </div>
                 <button
                   className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
@@ -367,19 +409,29 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                 </button>
               </div>
               <p className="mb-4 text-sm font-medium text-slate-600">
-                This code cannot be returned to after this window is closed.
+                This code cannot be returned to after this window is closed. Please copy it or take a screenshot.
               </p>
               <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p className="break-all text-center font-mono text-2xl font-bold tracking-normal text-slate-950">{prizeCode}</p>
               </div>
-              <button
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#0066B3] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0066B3]/90"
-                onClick={copyPrizeCode}
-                type="button"
-              >
-                <Copy className="size-4" aria-hidden="true" />
-                {copyMessage || "Copy Code"}
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0066B3] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0066B3]/90"
+                  onClick={copyPrizeCode}
+                  type="button"
+                >
+                  <Copy className="size-4" aria-hidden="true" />
+                  {copyMessage || "Copy"}
+                </button>
+                <button
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                  onClick={downloadPrizeCodeImage}
+                  type="button"
+                >
+                  <Download className="size-4" aria-hidden="true" />
+                  Save Image
+                </button>
+              </div>
             </div>
           </div>
         )}

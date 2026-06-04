@@ -104,6 +104,16 @@ function AdminPage({ onLogout }) {
     loadAdminData();
   }, []);
 
+  useEffect(() => {
+    if (message || error) {
+      const timer = setTimeout(() => {
+        setMessage("");
+        setError("");
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [message, error]);
+
   function handleLogout() {
     logout();
     onLogout();
@@ -321,14 +331,6 @@ function AdminPage({ onLogout }) {
       </aside>
 
       <main className="flex-1 overflow-y-auto bg-white p-4 sm:p-6 md:p-8 lg:p-12">
-        {(error || message) && (
-          <div className="mb-4 grid gap-3">
-            {error && <p className="rounded-xl bg-red-50 p-4 text-sm font-medium text-red-600">{error}</p>}
-            {message && (
-              <p className="rounded-xl bg-green-50 p-4 text-sm font-medium text-green-700">{message}</p>
-            )}
-          </div>
-        )}
 
         {activeScreen === "analytics" && (
           <AnalyticsScreen analytics={analytics} />
@@ -363,6 +365,35 @@ function AdminPage({ onLogout }) {
           />
         )}
       </main>
+
+      {/* Toast Notifications */}
+      <div className="fixed right-4 top-4 z-50 flex w-full max-w-sm flex-col gap-3 sm:right-6 sm:top-6 pointer-events-none">
+        <style>{`
+          @keyframes toastSlideIn {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+          }
+          .animate-toast {
+            animation: toastSlideIn 0.3s ease-out forwards;
+          }
+        `}</style>
+        {error && (
+          <div className="animate-toast pointer-events-auto flex items-start justify-between rounded-xl bg-rose-50 p-4 text-sm font-semibold text-rose-700 shadow-lg ring-1 ring-rose-500/20">
+            <span className="mt-0.5">{error}</span>
+            <button onClick={() => setError("")} className="ml-4 shrink-0 rounded-lg p-1 transition hover:bg-rose-100" type="button" aria-label="Dismiss">
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        {message && (
+          <div className="animate-toast pointer-events-auto flex items-start justify-between rounded-xl bg-emerald-50 p-4 text-sm font-semibold text-emerald-700 shadow-lg ring-1 ring-emerald-500/20">
+            <span className="mt-0.5">{message}</span>
+            <button onClick={() => setMessage("")} className="ml-4 shrink-0 rounded-lg p-1 transition hover:bg-emerald-100" type="button" aria-label="Dismiss">
+              <X size={16} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
