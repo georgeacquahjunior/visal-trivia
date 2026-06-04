@@ -1,7 +1,7 @@
-import { ArrowRight, Clock, Copy, Download, Home, Layers, RotateCcw, Sparkles, Target, Trophy, X, Zap } from "lucide-react";
+import { ArrowRight, Clock, Home, Layers, RotateCcw, Sparkles, Target, Trophy, X, Zap } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { checkAnswer, claimPrizeCode, getQuizSettings, startQuiz, submitQuiz } from "../api/client.js";
+import { checkAnswer, getQuizSettings, startQuiz, submitQuiz } from "../api/client.js";
 import Button from "../components/Button.jsx";
 import EmptyState from "../components/EmptyState.jsx";
 import LoadingState from "../components/LoadingState.jsx";
@@ -43,13 +43,8 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [prizeCodeMessage, setPrizeCodeMessage] = useState("");
-  const [prizeCode, setPrizeCode] = useState("");
-  const [isPrizeModalOpen, setIsPrizeModalOpen] = useState(false);
-  const [copyMessage, setCopyMessage] = useState("");
   const resultSavedRef = useRef(false);
   const autoStartRef = useRef(false);
-  const prizeClaimedRef = useRef(false);
 
   useEffect(() => {
     if (!result || !user?.id || resultSavedRef.current) {
@@ -76,30 +71,6 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
 
   const currentQuestion = session?.questions[currentIndex];
   const isLastQuestion = session && currentIndex === session.questions.length - 1;
-
-  useEffect(() => {
-    if (!result || !user?.name || !quizSettings?.pass_percentage || prizeClaimedRef.current) {
-      return;
-    }
-
-    const percentage = Math.round((result.score / result.total_questions) * 100);
-    const isWinner = percentage >= (quizSettings.pass_percentage ?? 70);
-    if (!isWinner) {
-      return;
-    }
-
-    prizeClaimedRef.current = true;
-
-    claimPrizeCode({ player_name: user.name })
-      .then((entry) => {
-        setPrizeCode(entry.code);
-        setIsPrizeModalOpen(true);
-        setPrizeCodeMessage("Your prize code is ready.");
-      })
-      .catch(() => {
-        setPrizeCodeMessage("Please collect your prize from the admin desk.");
-      });
-  }, [quizSettings.pass_percentage, result, user?.name]);
 
   const finishQuiz = useCallback(async () => {
     if (!session || isSubmitting || result) {
@@ -168,7 +139,6 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     setResult(null);
     setAnswerResults(null);
     setRevealedAnswer(null);
-    setPrizeCodeMessage("");
     setAnswers({});
     try {
       const settings = await getQuizSettings();
@@ -250,78 +220,8 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     setRemaining(quizSettings.quiz_time_seconds);
     setAnswerResults(null);
     setRevealedAnswer(null);
-    setPrizeCodeMessage("");
-    setPrizeCode("");
-    setIsPrizeModalOpen(false);
-    setCopyMessage("");
-    prizeClaimedRef.current = false;
     resultSavedRef.current = false;
     autoStartRef.current = false;
-  }
-
-  async function copyPrizeCode() {
-    if (!prizeCode) {
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(prizeCode);
-      setCopyMessage("Copied");
-    } catch {
-      setCopyMessage("Select and copy the code");
-    }
-  }
-
-  function downloadPrizeCodeImage() {
-    if (!prizeCode) return;
-
-    const canvas = document.createElement("canvas");
-    canvas.width = 500;
-    canvas.height = 250;
-    const ctx = canvas.getContext("2d");
-
-    // Background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Border
-    ctx.strokeStyle = "#e2e8f0";
-    ctx.lineWidth = 8;
-    ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-    // Title
-    ctx.fillStyle = "#64748b";
-    ctx.font = "bold 22px sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("Visal Trivia Prize", canvas.width / 2, 70);
-
-    // Code
-    ctx.fillStyle = "#0066B3";
-    ctx.font = "bold 56px monospace";
-    ctx.fillText(prizeCode, canvas.width / 2, 140);
-
-    // Footer
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "16px sans-serif";
-    ctx.fillText("Visit our booth on the 3rd floor for your voucher.", canvas.width / 2, 210);
-
-    // Date
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "14px sans-serif";
-    ctx.fillText(`Date: ${new Date().toLocaleDateString()}`, canvas.width / 2, 235);
-
-    const url = canvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `prize-code-${prizeCode}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
-  function closePrizeModal() {
-    setIsPrizeModalOpen(false);
-    setCopyMessage("");
   }
 
   if (isLoading) {
@@ -362,7 +262,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
 
             {isWinner && (
               <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50/90 p-4 text-sm font-semibold text-emerald-800 shadow-sm">
-                You reached the pass threshold. {prizeCodeMessage || "Preparing your prize code."}
+                Congratulations! Visit our booth on the 3rd floor for your voucher.
               </div>
             )}
 
@@ -396,51 +296,6 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
             </button>
           </div>
         </div>
-        {isWinner && prizeCode && isPrizeModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 px-4 py-6">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 text-left shadow-2xl">
-              <div className="mb-5 flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-[#0066B3] center ">Prize Unlocked</p>
-                  <h2 className="mt-2 text-2xl font-bold tracking-normal text-slate-950 center ">Congratulations!🥳</h2>
-                </div>
-                <button
-                  className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
-                  onClick={closePrizeModal}
-                  type="button"
-                  aria-label="Close prize code"
-                >
-                  <X className="size-5" aria-hidden="true" />
-                </button>
-              </div>
-              <p className="mb-4 text-sm text-slate-600">
-                <strong className="mb-2 block text-base text-slate-900">Visit our booth on the 3rd floor for your voucher.</strong>
-                This code cannot be returned to after this window is closed. Please copy it or take a screenshot.
-              </p>
-              <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="break-all text-center font-mono text-2xl font-bold tracking-normal text-slate-950">{prizeCode}</p>
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#0066B3] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0066B3]/90"
-                  onClick={copyPrizeCode}
-                  type="button"
-                >
-                  <Copy className="size-4" aria-hidden="true" />
-                  {copyMessage || "Copy"}
-                </button>
-                <button
-                  className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
-                  onClick={downloadPrizeCodeImage}
-                  type="button"
-                >
-                  <Download className="size-4" aria-hidden="true" />
-                  Save Image
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     );
   }

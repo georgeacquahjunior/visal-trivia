@@ -91,14 +91,29 @@ def verify_google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db
 
 
 @router.post("/auth/name", response_model=GoogleAuthResponse, tags=["auth"])
-def verify_name_login(payload: NameAuthRequest) -> GoogleAuthResponse:
+def verify_name_login(payload: NameAuthRequest, db: Session = Depends(get_db)) -> GoogleAuthResponse:
     name = payload.name.strip()
     if not name:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name is required")
 
+    user_id = f"guest-{uuid4().hex}"
+    try:
+        db.add(
+            UserLogin(
+                google_sub=user_id,
+                name=name,
+                email="",
+                role="player",
+                picture=None,
+            )
+        )
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+
     return GoogleAuthResponse(
         user=AuthUser(
-            id=f"guest-{uuid4().hex}",
+            id=user_id,
             name=name,
             email="",
             role="player",
