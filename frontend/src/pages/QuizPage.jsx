@@ -303,7 +303,7 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
     // Footer
     ctx.fillStyle = "#94a3b8";
     ctx.font = "16px sans-serif";
-    ctx.fillText("Present this code to claim your prize.", canvas.width / 2, 210);
+    ctx.fillText("Visit our booth on the 3rd floor for your voucher.", canvas.width / 2, 210);
 
     const url = canvas.toDataURL("image/png");
     const link = document.createElement("a");
@@ -408,7 +408,8 @@ function QuizPage({ onDashboard, onShowLeaderboard }) {
                   <X className="size-5" aria-hidden="true" />
                 </button>
               </div>
-              <p className="mb-4 text-sm font-medium text-slate-600">
+              <p className="mb-4 text-sm text-slate-600">
+                <strong className="mb-2 block text-base text-slate-900">Congratulations! Visit our booth on the 3rd floor for your voucher.</strong>
                 This code cannot be returned to after this window is closed. Please copy it or take a screenshot.
               </p>
               <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 p-4">

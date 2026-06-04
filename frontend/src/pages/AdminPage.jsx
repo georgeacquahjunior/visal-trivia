@@ -367,7 +367,7 @@ function AdminPage({ onLogout }) {
       </main>
 
       {/* Toast Notifications */}
-      <div className="fixed right-4 top-4 z-50 flex w-full max-w-sm flex-col gap-3 sm:right-6 sm:top-6 pointer-events-none">
+      <div className="pointer-events-none fixed inset-x-4 top-4 z-50 flex flex-col gap-3 sm:inset-x-auto sm:right-6 sm:top-6 sm:w-full sm:max-w-sm">
         <style>{`
           @keyframes toastSlideIn {
             from { opacity: 0; transform: translateX(100%); }

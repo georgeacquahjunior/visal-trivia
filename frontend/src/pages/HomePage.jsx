@@ -141,7 +141,7 @@ function HomePage({
         {/* Welcome Section */}
         <div className="flex flex-col items-start gap-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-slate-100 text-2xl font-bold text-slate-500">
+            <div className="flex h-20 w-20 shrink-0 bg items-center justify-center rounded-full bg-slate-100 text-2xl font-bold text-slate-500">
               {user.picture ? (
                 <img
                   alt={`${user.name} avatar`}
