@@ -12,6 +12,7 @@ import {
   Save,
   Settings,
   Trash2,
+  Trophy,
   Users,
   X,
 } from "lucide-react";
@@ -31,6 +32,7 @@ import {
   adminImportQuestionsCsv,
   adminUpdateQuestion,
   adminUpdateSettings,
+  getLeaderboard,
 } from "../api/client.js";
 import EmptyState from "../components/EmptyState.jsx";
 import LoadingState from "../components/LoadingState.jsx";
@@ -50,6 +52,7 @@ const adminScreens = [
   { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "users", label: "User Logins", icon: Users },
   { id: "questions", label: "Questions", icon: ListChecks },
+  { id: "leaderboard", label: "Leaderboard", icon: Trophy },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
@@ -59,6 +62,7 @@ function AdminPage({ onLogout }) {
   const [analytics, setAnalytics] = useState(null);
   const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [prizeCodes, setPrizeCodes] = useState([]);
   const [newPrizeCode, setNewPrizeCode] = useState("");
@@ -80,13 +84,14 @@ function AdminPage({ onLogout }) {
     setIsLoading(true);
     setError("");
     try {
-      const [analyticsData, userData, categoryData, questionData, settingsData, prizeCodeData] = await Promise.all([
+      const [analyticsData, userData, categoryData, questionData, settingsData, prizeCodeData, leaderboardData] = await Promise.all([
         adminGetAnalytics(user),
         adminGetUsers(user),
         adminGetCategories(user),
         adminGetQuestions(user),
         adminGetSettings(user),
         adminGetPrizeCodes(user),
+        getLeaderboard(100),
       ]);
       setAnalytics(analyticsData);
       setUsers(userData);
@@ -94,6 +99,7 @@ function AdminPage({ onLogout }) {
       setQuestions(questionData);
       setSettings(settingsData);
       setPrizeCodes(prizeCodeData);
+      setLeaderboard(leaderboardData);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -359,6 +365,9 @@ function AdminPage({ onLogout }) {
           <AnalyticsScreen analytics={analytics} />
         )}
         {activeScreen === "users" && <UsersScreen users={users} onRefresh={loadAdminData} />}
+        {activeScreen === "leaderboard" && (
+          <AdminLeaderboardScreen leaderboard={leaderboard} settings={settings} onRefresh={loadAdminData} />
+        )}
         {activeScreen === "questions" && (
           <QuestionsScreen
             categories={categories}
@@ -949,6 +958,100 @@ function SettingsScreen({ addPrizeCode, deletePrizeCode, newPrizeCode, prizeCode
             </button>
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function AdminLeaderboardScreen({ leaderboard, settings, onRefresh }) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const totalPages = Math.ceil(leaderboard.length / itemsPerPage);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const visibleEntries = leaderboard.slice(startIndex, startIndex + itemsPerPage);
+
+  return (
+    <section className="flex h-full flex-col max-w-6xl mx-auto">
+      <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Leaderboard Results</h2>
+          <p className="mt-2 text-base text-slate-500">View player scores and pass/fail status.</p>
+        </div>
+        <button
+          onClick={onRefresh}
+          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-900 transition hover:bg-slate-200 sm:w-auto"
+          type="button"
+        >
+          <RefreshCw size={16} className="transition-transform group-active:rotate-180" aria-hidden="true" />
+          Refresh
+        </button>
+      </div>
+
+      <div className="flex flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white">
+        {leaderboard.length === 0 ? (
+          <div className="p-12"><EmptyState title="No scores yet" message="The leaderboard is currently empty." /></div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full whitespace-nowrap text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50 text-slate-500">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Rank</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Player</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Score</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Percentage</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Status</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Time</th>
+                    <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {visibleEntries.map((entry, index) => {
+                    const percentage = Math.round((entry.score / entry.total_questions) * 100);
+                    const passed = percentage >= (settings?.pass_percentage || 70);
+                    return (
+                      <tr key={entry.id} className="transition-colors hover:bg-slate-50">
+                        <td className="px-6 py-4 font-semibold text-slate-500">{startIndex + index + 1}</td>
+                        <td className="px-6 py-4">
+                          <p className="font-semibold text-slate-950">{entry.player_name}</p>
+                          <p className="text-xs text-slate-500">{entry.category_name ?? "Mixed"}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-bold text-[#0066B3]">{entry.score}</span>
+                          <span className="text-xs text-slate-400">/{entry.total_questions}</span>
+                        </td>
+                        <td className="px-6 py-4 font-medium text-slate-600">{percentage}%</td>
+                        <td className="px-6 py-4">
+                          <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${passed ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                            {passed ? "Pass" : "Fail"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-slate-600">{formatTime(entry.completion_time_seconds)}</td>
+                        <td className="px-6 py-4 text-slate-600">{new Date(entry.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {totalPages > 1 && (
+              <div className="mt-auto flex flex-col items-center justify-between gap-4 border-t border-slate-200 bg-slate-50 px-4 py-4 sm:flex-row sm:px-6">
+                <p className="text-sm text-slate-500">
+                  Showing <span className="font-semibold text-slate-950">{startIndex + 1}</span> to <span className="font-semibold text-slate-950">{Math.min(startIndex + itemsPerPage, leaderboard.length)}</span> of <span className="font-semibold text-slate-950">{leaderboard.length}</span> results
+                </p>
+                <div className="flex gap-2">
+                  <button className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50" disabled={currentPage === 1} onClick={() => setCurrentPage((p) => p - 1)} type="button">
+                    Previous
+                  </button>
+                  <button className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-50" disabled={currentPage === totalPages} onClick={() => setCurrentPage((p) => p + 1)} type="button">
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </section>
   );
