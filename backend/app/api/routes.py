@@ -186,12 +186,18 @@ def get_leaderboard(
     limit: int = Query(default=10, ge=1, le=100),
     db: Session = Depends(get_db),
 ) -> list[LeaderboardEntry]:
-    rows = db.execute(
+    query = (
         select(Score, QuizSession, Category)
         .join(QuizSession, Score.session_id == QuizSession.id)
         .outerjoin(Category, QuizSession.category_id == Category.id)
         .options(joinedload(Score.player))
-        .order_by(Score.score.desc(), Score.completion_time_seconds.asc(), Score.created_at.asc())
+    )
+    
+    if hasattr(Score, "is_deleted"):
+        query = query.where(Score.is_deleted.isnot(True))
+
+    rows = db.execute(
+        query.order_by(Score.score.desc(), Score.completion_time_seconds.asc(), Score.created_at.asc())
         .limit(limit)
     ).all()
 
@@ -208,6 +214,21 @@ def get_leaderboard(
         for score, _session, category in rows
     ]
 
+
+@router.delete("/admin/leaderboard/{score_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["admin"], dependencies=[Depends(require_google_admin)])
+def admin_delete_leaderboard_entry(score_id: int, db: Session = Depends(get_db)) -> None:
+    score = db.get(Score, score_id)
+    if score is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Score not found")
+    
+    if hasattr(score, "is_deleted"):
+        score.is_deleted = True
+        db.commit()
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Soft delete is not fully configured. Please add 'is_deleted = Column(Boolean, default=False)' to the Score model and run migrations.",
+        )
 
 @router.get("/admin/questions", response_model=list[QuestionRead], tags=["admin"], dependencies=[Depends(require_google_admin)])
 def admin_list_questions(db: Session = Depends(get_db)) -> list[Question]:

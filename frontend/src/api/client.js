@@ -206,6 +206,15 @@ export function adminDeletePrizeCode(user, prizeCodeId) {
   );
 }
 
+export function adminDeleteLeaderboardEntry(user, scoreId) {
+  return request(
+    `/api/admin/leaderboard/${scoreId}`,
+    adminOptions(user, {
+      method: "DELETE",
+    }),
+  );
+}
+
 export function claimPrizeCode(payload) {
   return request("/api/quiz/claim-prize", {
     method: "POST",

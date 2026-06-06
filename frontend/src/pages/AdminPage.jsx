@@ -22,6 +22,7 @@ import {
   adminCreatePrizeCode,
   adminCreateQuestion,
   adminDeletePrizeCode,
+  adminDeleteLeaderboardEntry,
   adminDeleteQuestion,
   adminGetAnalytics,
   adminGetCategories,
@@ -265,6 +266,18 @@ function AdminPage({ onLogout }) {
     }
   }
 
+  async function deleteLeaderboardEntry(scoreId) {
+    setError("");
+    setMessage("");
+    try {
+      await adminDeleteLeaderboardEntry(user, scoreId);
+      setMessage("Leaderboard entry deleted.");
+      loadAdminData();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   async function importQuestionsCsv(file) {
     if (!file) {
       return;
@@ -366,7 +379,7 @@ function AdminPage({ onLogout }) {
         )}
         {activeScreen === "users" && <UsersScreen users={users} onRefresh={loadAdminData} />}
         {activeScreen === "leaderboard" && (
-          <AdminLeaderboardScreen leaderboard={leaderboard} settings={settings} onRefresh={loadAdminData} />
+          <AdminLeaderboardScreen leaderboard={leaderboard} settings={settings} onRefresh={loadAdminData} onDelete={deleteLeaderboardEntry} />
         )}
         {activeScreen === "questions" && (
           <QuestionsScreen
@@ -963,8 +976,9 @@ function SettingsScreen({ addPrizeCode, deletePrizeCode, newPrizeCode, prizeCode
   );
 }
 
-function AdminLeaderboardScreen({ leaderboard, settings, onRefresh }) {
+function AdminLeaderboardScreen({ leaderboard, settings, onRefresh, onDelete }) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [entryToDelete, setEntryToDelete] = useState(null);
   const itemsPerPage = 10;
   const totalPages = Math.ceil(leaderboard.length / itemsPerPage);
 
@@ -1004,6 +1018,7 @@ function AdminLeaderboardScreen({ leaderboard, settings, onRefresh }) {
                     <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Status</th>
                     <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Time</th>
                     <th className="px-6 py-4 text-xs font-semibold uppercase tracking-widest">Date</th>
+                    <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-widest">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -1029,6 +1044,11 @@ function AdminLeaderboardScreen({ leaderboard, settings, onRefresh }) {
                         </td>
                         <td className="px-6 py-4 text-slate-600">{formatTime(entry.completion_time_seconds)}</td>
                         <td className="px-6 py-4 text-slate-600">{new Date(entry.created_at).toLocaleDateString()}</td>
+                        <td className="px-6 py-4 text-right">
+                          <button className="rounded-md p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-600" onClick={() => setEntryToDelete(entry)} type="button" title="Delete score">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -1051,6 +1071,39 @@ function AdminLeaderboardScreen({ leaderboard, settings, onRefresh }) {
               </div>
             )}
           </>
+        )}
+
+        {entryToDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-opacity">
+            <div className="animate-rise-in relative w-full max-w-sm rounded-3xl bg-white p-8 text-center shadow-2xl">
+              <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-rose-100">
+                <Trash2 className="size-8 text-rose-600" aria-hidden="true" />
+              </div>
+              <h3 className="mb-3 text-2xl font-bold tracking-tight text-slate-900">Delete Entry?</h3>
+              <p className="mb-8 text-base font-medium text-slate-600">
+                Are you sure you want to hide the score for <strong>{entryToDelete.player_name}</strong>?
+              </p>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <button
+                  onClick={() => {
+                    onDelete(entryToDelete.id);
+                    setEntryToDelete(null);
+                  }}
+                  className="flex-1 rounded-full bg-rose-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-rose-700"
+                  type="button"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setEntryToDelete(null)}
+                  className="flex-1 rounded-full border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                  type="button"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </section>

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -15,6 +15,7 @@ class Score(Base):
     score: Mapped[int] = mapped_column(Integer)
     total_questions: Mapped[int] = mapped_column(Integer)
     completion_time_seconds: Mapped[int] = mapped_column(Integer)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, server_default=func.false(), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     player: Mapped["Player"] = relationship(back_populates="scores")
