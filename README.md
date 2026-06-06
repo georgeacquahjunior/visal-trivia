@@ -80,7 +80,7 @@ Deploy the frontend and embed it in a company website:
 
 ```html
 <iframe
-  src="https://yourdomain.com/trivia"
+  src="https://visal-trivia-ho8x.onrender.com"
   width="100%"
   height="700"
   style="border:none;">
